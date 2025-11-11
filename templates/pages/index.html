@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Home Page{% endblock %}
+{% block title %}{{page}} Page{% endblock %}
 {% block content %}
 <h1>Welcome {{user.name}}</h1>
-{{script}}
-<p>This is the homepage.</p>
+<p>This is the {{page}} page.</p>
 {% endblock %}
