@@ -109,26 +109,12 @@
 
   <script>
     // Same data as your React component
-    const buildings = [
-      { id: 1, name: 'בניין הנדסה', availableRooms: 8, totalRooms: 15, color: '#0ea5e9' },
-      { id: 2, name: 'ספרייה מרכזית', availableRooms: 3, totalRooms: 12, color: '#f59e0b' },
-      { id: 3, name: 'בניין מדעים', availableRooms: 12, totalRooms: 18, color: '#10b981' },
-      { id: 4, name: 'בית הסטודנט', availableRooms: 5, totalRooms: 10, color: '#8b5cf6' },
-    ];
+    const buildings = {{ buildings_server | tojson }};
 
-    const recentSpaces = [
-      { id: 1, name: 'כיתה 204', building: 'בניין הנדסה', status: 'available' },
-      { id: 2, name: 'חדר קריאה שקט 3', building: 'ספרייה מרכזית', status: 'available' },
-      { id: 3, name: 'מעבדת מחשבים 5', building: 'בניין הנדסה', status: 'busy' },
-      { id: 4, name: 'כיתה 301', building: 'בניין מדעים', status: 'available' },
-    ];
+    const recentSpaces = {{ recentSpaces_server | tojson }};
 
-    const availableNow = [
-      { name: 'כיתה 201', building: 'בניין הנדסה', floor: 2 },
-      { name: 'מעבדה 3', building: 'בניין מדעים', floor: 1 },
-      { name: 'חדר סמינרים A', building: 'ספרייה מרכזית', floor: 3 },
-    ];
-
+    const availableNow = {{ available_now_server | tojson }};
+    
     function statusIcon(status) {
       if (status === 'available') {
         return `
