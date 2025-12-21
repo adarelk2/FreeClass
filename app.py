@@ -1,13 +1,12 @@
-from flask import Flask
-from flask import request
-from flask import url_for
-from flask import render_template
+from flask import Flask, request
+from core.application import Application
 
 app = Flask(__name__)
-@app.route("/<controller_name>")
-def test(controller_name):
-    return render_template("pages/index.html", user={"name": request.args['name']}, page=controller_name)
+application = Application()
+
+@app.get("/<controller>")
+def dispatch(controller):
+    return application.handle(request, controller)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000)
-

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="he">
+  <head>
+    <meta charset="utf-8">
+    <title>Error</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f8f8f8;
+        padding: 40px;
+      }
+      .error-box {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        max-width: 600px;
+        margin: auto;
+      }
+      h1 {
+        color: #c0392b;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="error-box">
+      <h1>Request Error</h1>
+
+      {% if errors %}
+        <ul>
+          {% for error in errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Unknown error</p>
+      {% endif %}
+    </div>
+  </body>
+</html>
