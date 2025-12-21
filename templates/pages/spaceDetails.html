@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>פרטי כיתה</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="search.html" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-700"></i>
+          </a>
+          <h1 class="text-xl font-bold text-slate-800">פרטי כיתה</h1>
+        </div>
+
+        <button id="shareBtn" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Share">
+          <i data-lucide="share-2" class="w-5 h-5 text-slate-600"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Hero Card -->
+    <section class="bg-white rounded-xl shadow-lg overflow-hidden border-t-4 border-t-emerald-500">
+      <div class="p-8">
+        <div class="flex items-start gap-6">
+          <div class="w-20 h-20 rounded-2xl bg-emerald-50 flex items-center justify-center">
+            <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-600"></i>
+          </div>
+
+          <div class="flex-1">
+            <h2 id="spaceName" class="text-3xl font-bold text-slate-800 mb-2">כיתה 204</h2>
+
+            <div class="flex items-center gap-3 text-slate-600 mb-4 flex-wrap">
+              <i data-lucide="map-pin" class="w-4 h-4"></i>
+              <span id="spaceBuilding">בניין הנדסה</span>
+              <span>•</span>
+              <span>קומה <span id="spaceFloor">2</span></span>
+              <span>•</span>
+              <span>חדר <span id="spaceRoom">204</span></span>
+            </div>
+
+            <div class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-lg bg-emerald-100 text-emerald-700">
+              ✓ הכיתה פנויה כרגע
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-6 pt-6 border-t text-slate-600">
+          <i data-lucide="clock" class="w-5 h-5"></i>
+          <span class="font-medium">שעות פתיחה:</span>
+          <span id="spaceHours">08:00 - 22:00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Weekly Schedule -->
+    <section class="bg-white rounded-xl shadow-sm">
+      <div class="p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i data-lucide="calendar" class="w-5 h-5 text-sky-600"></i>
+          <h3 class="text-lg font-semibold text-slate-800">לוח שעות שבועי</h3>
+        </div>
+
+        <div id="scheduleList" class="space-y-3"></div>
+
+        <button
+          id="toggleScheduleBtn"
+          class="w-full mt-4 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md hover:bg-sky-50 text-sky-600 transition"
+        >
+          <span id="toggleLabel">הצג את כל השבוע</span>
+          <i id="toggleIcon" data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Tip -->
+    <section class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+      <p class="text-sm text-slate-600">
+        💡 <strong>טיפ:</strong> המידע מתעדכן בזמן אמת על בסיס חיישנים בכיתה.
+      </p>
+    </section>
+
+  </main>
+
+  <script>
+    // --------------------------------
+    // Data (same as React)
+    // --------------------------------
+    const space = {
+      id: 1,
+      name: 'כיתה 204',
+      building: 'בניין הנדסה',
+      floor: 2,
+      room: '204',
+      status: 'available',
+      openHours: '08:00 - 22:00',
+    };
+
+    const schedule = [
+      { day: 'ראשון', hours: '08:00 - 22:00', occupied: ['10:00-12:00', '15:00-17:00'] },
+      { day: 'שני', hours: '08:00 - 22:00', occupied: ['09:00-11:00', '14:00-16:00'] },
+      { day: 'שלישי', hours: '08:00 - 22:00', occupied: ['10:00-13:00', '15:00-18:00'] },
+      { day: 'רביעי', hours: '08:00 - 22:00', occupied: ['09:00-11:00'] },
+      { day: 'חמישי', hours: '08:00 - 20:00', occupied: [] },
+      { day: 'שישי', hours: '08:00 - 14:00', occupied: [] },
+      { day: 'שבת', hours: 'סגור', occupied: [] },
+    ];
+
+    let showFullSchedule = false;
+
+    // --------------------------------
+    // Elements
+    // --------------------------------
+    const scheduleList = document.getElementById('scheduleList');
+    const toggleBtn = document.getElementById('toggleScheduleBtn');
+    const toggleLabel = document.getElementById('toggleLabel');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const shareBtn = document.getElementById('shareBtn');
+
+    // Fill space UI
+    document.getElementById('spaceName').textContent = space.name;
+    document.getElementById('spaceBuilding').textContent = space.building;
+    document.getElementById('spaceFloor').textContent = space.floor;
+    document.getElementById('spaceRoom').textContent = space.room;
+    document.getElementById('spaceHours').textContent = space.openHours;
+
+    // --------------------------------
+    // Render schedule
+    // --------------------------------
+    function renderSchedule() {
+      const visible = showFullSchedule ? schedule : schedule.slice(0, 3);
+
+      scheduleList.innerHTML = visible.map((d, index) => {
+        const isTodayStyle = index === 0; // like React: first item highlighted
+        const wrapperClass = isTodayStyle
+          ? 'bg-sky-50 border-2 border-sky-200'
+          : 'bg-slate-50 border border-transparent';
+
+        let rightSide = '';
+        if (d.occupied.length > 0) {
+          rightSide = `
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-xs text-slate-500">תפוס:</span>
+              ${d.occupied.map(t => `
+                <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">${t}</span>
+              `).join('')}
+            </div>
+          `;
+        } else if (d.hours !== 'סגור') {
+          rightSide = `<span class="text-sm text-emerald-600 font-medium">פנוי כל היום</span>`;
+        } else {
+          rightSide = '';
+        }
+
+        return `
+          <div class="p-4 rounded-xl ${wrapperClass}">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-4">
+                <div class="w-20 font-bold ${isTodayStyle ? 'text-sky-700' : 'text-slate-800'}">${d.day}</div>
+                <div class="text-sm text-slate-600">${d.hours}</div>
+              </div>
+              ${rightSide}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Toggle button text + icon
+      if (showFullSchedule) {
+        toggleLabel.textContent = 'הצג פחות';
+        toggleIcon.setAttribute('data-lucide', 'chevron-up');
+      } else {
+        toggleLabel.textContent = 'הצג את כל השבוע';
+        toggleIcon.setAttribute('data-lucide', 'chevron-down');
+      }
+
+      lucide.createIcons();
+    }
+
+    // --------------------------------
+    // Events
+    // --------------------------------
+    toggleBtn.addEventListener('click', () => {
+      showFullSchedule = !showFullSchedule;
+      renderSchedule();
+    });
+
+    shareBtn.addEventListener('click', async () => {
+      const shareText = `${space.name} • ${space.building} • קומה ${space.floor} • חדר ${space.room}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: 'פרטי כיתה',
+            text: shareText,
+            url: location.href
+          });
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          alert('הועתק ללוח: ' + shareText);
+        }
+      } catch (e) {
+        // user canceled or permission denied
+      }
+    });
+
+    // Boot
+    renderSchedule();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
