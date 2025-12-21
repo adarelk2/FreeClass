@@ -1,7 +1,238 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>קמפוס חכם - Dashboard</title>
 
-{% block title %}{{page}} Page{% endblock %}
-{% block content %}
-<h1>Welcome {{user.name}}</h1>
-<p>This is the {{page}} page.</p>
-{% endblock %}
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
+            <i data-lucide="map-pin" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-800">קמפוס חכם</h1>
+            <p class="text-xs text-slate-500">מצא כיתה פנויה במהירות</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- In React this was <Link> - in HTML we use normal <a> -->
+          <a href="#admin-login" class="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 transition">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            <span>כניסת מנהלים</span>
+          </a>
+
+          <a href="#search" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span>חיפוש כיתה</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Hero Card -->
+    <section class="rounded-xl shadow-sm border-0 bg-gradient-to-br from-sky-500 to-blue-600 text-white overflow-hidden">
+      <div class="p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sky-100 text-sm">כיתות פנויות כרגע</p>
+            <p class="text-5xl font-bold mt-2" id="heroAvailableNow">28</p>
+            <p class="text-sky-100 mt-2">מתוך <span id="heroTotalCampus">55</span> כיתות בקמפוס</p>
+          </div>
+          <div class="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
+            <i data-lucide="map-pin" class="w-12 h-12"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buildings Grid -->
+    <section>
+      <h2 class="text-lg font-semibold text-slate-800 mb-4">בניינים בקמפוס</h2>
+      <div id="buildingsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- injected by JS -->
+      </div>
+    </section>
+
+    <!-- Recent & Available -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Recent -->
+      <div class="bg-white rounded-xl shadow-sm border-0">
+        <div class="px-6 pt-6 pb-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-800">כיתות שנצפו לאחרונה</h3>
+            <a href="#search" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-sky-600 hover:text-sky-700 hover:bg-sky-50 transition">
+              <span class="text-sm">הצג הכל</span>
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <div id="recentList" class="px-6 pb-6 space-y-3">
+          <!-- injected by JS -->
+        </div>
+      </div>
+
+      <!-- Available now -->
+      <div class="bg-white rounded-xl shadow-sm border-0">
+        <div class="px-6 pt-6 pb-2">
+          <h3 class="text-lg font-semibold text-slate-800">פנוי עכשיו</h3>
+        </div>
+
+        <div class="px-6 pb-6">
+          <div id="availableNowList" class="space-y-3">
+            <!-- injected by JS -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // Same data as your React component
+    const buildings = [
+      { id: 1, name: 'בניין הנדסה', availableRooms: 8, totalRooms: 15, color: '#0ea5e9' },
+      { id: 2, name: 'ספרייה מרכזית', availableRooms: 3, totalRooms: 12, color: '#f59e0b' },
+      { id: 3, name: 'בניין מדעים', availableRooms: 12, totalRooms: 18, color: '#10b981' },
+      { id: 4, name: 'בית הסטודנט', availableRooms: 5, totalRooms: 10, color: '#8b5cf6' },
+    ];
+
+    const recentSpaces = [
+      { id: 1, name: 'כיתה 204', building: 'בניין הנדסה', status: 'available' },
+      { id: 2, name: 'חדר קריאה שקט 3', building: 'ספרייה מרכזית', status: 'available' },
+      { id: 3, name: 'מעבדת מחשבים 5', building: 'בניין הנדסה', status: 'busy' },
+      { id: 4, name: 'כיתה 301', building: 'בניין מדעים', status: 'available' },
+    ];
+
+    const availableNow = [
+      { name: 'כיתה 201', building: 'בניין הנדסה', floor: 2 },
+      { name: 'מעבדה 3', building: 'בניין מדעים', floor: 1 },
+      { name: 'חדר סמינרים A', building: 'ספרייה מרכזית', floor: 3 },
+    ];
+
+    function statusIcon(status) {
+      if (status === 'available') {
+        return `
+          <div class="text-emerald-500">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          </div>
+        `;
+      }
+      return `
+        <div class="text-red-500">
+          <i data-lucide="x-circle" class="w-5 h-5"></i>
+        </div>
+      `;
+    }
+
+    function renderBuildings() {
+      const grid = document.getElementById('buildingsGrid');
+
+      grid.innerHTML = buildings.map(b => `
+        <a href="#building?id=${b.id}" class="block">
+          <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
+            <div class="p-5">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="font-semibold text-slate-800 group-hover:text-sky-600 transition-colors">
+                    ${b.name}
+                  </h3>
+                </div>
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color:${b.color}20">
+                  <i data-lucide="map-pin" class="w-5 h-5" style="color:${b.color}"></i>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-500">כיתות פנויות</span>
+                  <span class="font-bold text-2xl text-emerald-600">${b.availableRooms}</span>
+                </div>
+                <div class="text-xs text-slate-400 text-center pt-2 border-t">
+                  מתוך ${b.totalRooms} כיתות
+                </div>
+              </div>
+            </div>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    function renderRecent() {
+      const list = document.getElementById('recentList');
+
+      list.innerHTML = recentSpaces.map(s => `
+        <a href="#space?id=${s.id}" class="block">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                <i data-lucide="map-pin" class="w-5 h-5 text-slate-400"></i>
+              </div>
+              <div>
+                <p class="font-medium text-slate-800">${s.name}</p>
+                <p class="text-sm text-slate-500">${s.building}</p>
+              </div>
+            </div>
+            ${statusIcon(s.status)}
+          </div>
+        </a>
+      `).join('');
+    }
+
+    function renderAvailableNow() {
+      const list = document.getElementById('availableNowList');
+
+      list.innerHTML = availableNow.map(s => `
+        <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+              <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i>
+            </div>
+            <div>
+              <p class="font-medium text-slate-800">${s.name}</p>
+              <p class="text-sm text-slate-500">${s.building} • קומה ${s.floor}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderHeroNumbers() {
+      // Optional: compute "available now" across campus from buildings
+      const totalRooms = buildings.reduce((sum, b) => sum + b.totalRooms, 0);
+      const totalAvailable = buildings.reduce((sum, b) => sum + b.availableRooms, 0);
+
+      document.getElementById('heroAvailableNow').textContent = totalAvailable;
+      document.getElementById('heroTotalCampus').textContent = totalRooms;
+    }
+
+    // Render all
+    renderHeroNumbers();
+    renderBuildings();
+    renderRecent();
+    renderAvailableNow();
+
+    // Activate icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
