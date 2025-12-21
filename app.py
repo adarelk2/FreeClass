@@ -3,7 +3,11 @@ from core.application import Application
 
 app = Flask(__name__)
 application = Application()
-
+@app.get("/")
+def root():
+    # default controller: home
+    return application.handle(request, "home")
+    
 @app.get("/<controller>")
 def dispatch(controller):
     return application.handle(request, controller)
