@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from flask import render_template, abort, Response
+from flask import render_template, abort, Response, jsonify
 from werkzeug.wrappers import Request
 
 from core.controller_loader import ControllerLoader
@@ -27,7 +27,6 @@ class Application:
         call = self._parse_request(request, controller_from_path)
 
         if not self._is_valid_request(call, errors):
-            # כאן אפשר לעשות 404/400 לפי סוג error, כרגע נשאיר 400 כמו שהיה לך
             return render_template("error.html", errors=errors), 400
 
         try:
@@ -39,8 +38,9 @@ class Application:
                     "error.html",
                     errors=[f"Action '{call.method_name}' not found in controller '{call.controller_name}'"],
                 ), 404
-            
+
             result = method(call.params)
+
             if self.logger is not None:
                 try:
                     self.logger.insert({
@@ -88,12 +88,10 @@ class Application:
             errors.append(f"Controller '{call.controller_name}' not found")
             return False
 
-        # הגנה מינימלית: לא מאפשרים לקרוא private/dunder
         if call.method_name.startswith("_"):
             errors.append("Action not allowed")
             return False
 
-        # אין יותר ALLOWED_METHODS: אם המתודה לא קיימת נקבל 'Action not found'
         return True
 
     def _build_response(self, result: Any) -> Response:
@@ -103,6 +101,12 @@ class Application:
         if hasattr(result, "status_code"):
             return result
 
+        # ✅ JSON response
+        if isinstance(result, dict) and "json" in result:
+            status = int(result.get("status", 200))
+            return jsonify(result["json"]), status
+
+        # ✅ Template response
         if isinstance(result, dict) and "template" in result:
             template = result["template"]
             context = result.get("context", {})
