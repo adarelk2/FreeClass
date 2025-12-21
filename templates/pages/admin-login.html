@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>כניסת מנהלים</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 flex items-center justify-center p-4">
+
+  <main class="w-full max-w-md">
+    <section class="bg-white rounded-xl shadow-lg border-0 overflow-hidden">
+      <!-- Header -->
+      <div class="px-6 pt-6 pb-6">
+        <div class="flex items-center justify-between mb-4">
+          <a href="dashboard.html" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
+            <i data-lucide="arrow-right" class="w-5 h-5 text-slate-700"></i>
+          </a>
+          <span class="w-10 h-10"></span>
+        </div>
+
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
+          <i data-lucide="lock" class="w-8 h-8 text-white"></i>
+        </div>
+
+        <h1 class="text-2xl font-bold text-center text-slate-800">כניסת מנהלים</h1>
+        <p class="text-center text-slate-500 mt-1">הזן את פרטי ההתחברות שלך</p>
+      </div>
+
+      <!-- Content -->
+      <div class="px-6 pb-6">
+        <form id="loginForm" class="space-y-4" novalidate>
+          <!-- Username -->
+          <div class="space-y-2">
+            <label for="username" class="text-sm font-medium text-slate-700">שם משתמש</label>
+            <div class="relative">
+              <i data-lucide="user" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+              <input
+                id="username"
+                type="text"
+                placeholder="הזן שם משתמש"
+                class="w-full h-11 pr-10 px-3 rounded-md border border-slate-200 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-sky-200"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="space-y-2">
+            <label for="password" class="text-sm font-medium text-slate-700">סיסמה</label>
+            <div class="relative">
+              <i data-lucide="lock" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+              <input
+                id="password"
+                type="password"
+                placeholder="הזן סיסמה"
+                class="w-full h-11 pr-10 px-3 rounded-md border border-slate-200 bg-white
+                       focus:outline-none focus:ring-2 focus:ring-sky-200"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div id="errorBox" class="hidden">
+            <div class="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+              <span id="errorText"></span>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button
+            type="submit"
+            class="w-full h-11 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition font-medium"
+          >
+            התחבר
+          </button>
+
+          <!-- Hint -->
+          <div class="text-center">
+            <p class="text-xs text-slate-500 mt-4">💡 לצורך הדגמה: admin / admin123</p>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------
+    // "Auth" demo
+    // -----------------------------
+    const form = document.getElementById('loginForm');
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+    const errorBox = document.getElementById('errorBox');
+    const errorText = document.getElementById('errorText');
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBox.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function hideError() {
+      errorText.textContent = '';
+      errorBox.classList.add('hidden');
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hideError();
+
+      const username = (usernameEl.value || '').trim();
+      const password = (passwordEl.value || '').trim();
+
+      if (!username || !password) {
+        showError('נא למלא שם משתמש וסיסמה');
+        return;
+      }
+
+      // same logic as React example
+      if (username === 'admin' && password === 'admin123') {
+        // "navigate" like React Router
+        window.location.href = 'admin-dashboard.html';
+      } else {
+        showError('שם משתמש או סיסמה שגויים');
+      }
+    });
+
+    // initialize icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>חיפוש כיתה</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* simple drawer animation */
+    .drawer {
+      transform: translateX(110%);
+      transition: transform 220ms ease;
+    }
+    .drawer.open {
+      transform: translateX(0);
+    }
+    .backdrop {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+    .backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div class="flex items-center gap-3">
+        <a href="dashboard.html" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
+          <i data-lucide="arrow-right" class="w-5 h-5 text-slate-700"></i>
+        </a>
+        <h1 class="text-xl font-bold text-slate-800">חיפוש כיתה</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Search row -->
+    <section class="flex gap-3">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+        <input
+          id="searchInput"
+          placeholder="חפש לפי שם או מיקום..."
+          class="w-full pr-10 h-12 text-base border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-sky-200"
+        />
+      </div>
+
+      <button
+        id="openFiltersBtn"
+        class="h-12 px-4 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition inline-flex items-center gap-2"
+      >
+        <i data-lucide="sliders-horizontal" class="w-5 h-5 text-slate-700"></i>
+        <span class="hidden sm:inline text-slate-800">סינון</span>
+      </button>
+    </section>
+
+    <!-- Type chips -->
+    <section class="flex gap-2 overflow-x-auto pb-2" id="typeChips">
+      <!-- injected by JS -->
+    </section>
+
+    <!-- Result count -->
+    <section class="flex items-center justify-between mb-4">
+      <p class="text-sm text-slate-500">
+        נמצאו <span id="resultCount" class="font-semibold text-slate-700">0</span> תוצאות
+      </p>
+    </section>
+
+    <!-- Results -->
+    <section class="grid gap-4" id="resultsGrid">
+      <!-- injected by JS -->
+    </section>
+
+  </main>
+
+  <!-- Backdrop -->
+  <div id="backdrop" class="backdrop fixed inset-0 bg-black/30 z-50"></div>
+
+  <!-- Drawer (Sheet) -->
+  <aside
+    id="drawer"
+    class="drawer fixed top-0 right-0 h-full w-full sm:w-96 bg-white z-[60] shadow-2xl border-l border-slate-200 flex flex-col"
+    dir="rtl"
+    aria-hidden="true"
+  >
+    <div class="p-6 border-b border-slate-100">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">סינון תוצאות</h2>
+          <p class="text-sm text-slate-500 mt-1">התאם את החיפוש לצרכים שלך</p>
+        </div>
+        <button id="closeDrawerBtn" class="w-10 h-10 rounded-md hover:bg-slate-100 transition inline-flex items-center justify-center" aria-label="Close">
+          <i data-lucide="x" class="w-5 h-5 text-slate-700"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="p-6 space-y-6 overflow-auto">
+
+      <!-- Building -->
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-700">בניין</label>
+        <select id="buildingSelect" class="w-full h-11 rounded-md border border-slate-200 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200">
+          <!-- injected by JS -->
+        </select>
+      </div>
+
+      <!-- Floor -->
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-700">קומה</label>
+        <select id="floorSelect" class="w-full h-11 rounded-md border border-slate-200 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200">
+          <option value="all">כל הקומות</option>
+          <option value="1">קומה 1</option>
+          <option value="2">קומה 2</option>
+          <option value="3">קומה 3</option>
+          <option value="4">קומה 4</option>
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div class="space-y-3">
+        <label class="text-sm font-medium text-slate-700">סטטוס</label>
+        <select id="statusSelect" class="w-full h-11 rounded-md border border-slate-200 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200">
+          <option value="all">הכל</option>
+          <option value="available">פנוי בלבד</option>
+          <option value="busy">תפוס בלבד</option>
+        </select>
+      </div>
+
+      <button
+        id="clearFiltersBtn"
+        class="w-full h-11 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition"
+      >
+        נקה סינון
+      </button>
+
+      <button
+        id="applyFiltersBtn"
+        class="w-full h-11 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition"
+      >
+        החל סינון
+      </button>
+    </div>
+  </aside>
+
+  <script>
+    // -----------------------------
+    // Data (same as React)
+    // -----------------------------
+    const spaceTypes = [
+      { value: 'all', label: 'הכל', icon: 'map-pin' },
+      { value: 'classroom', label: 'כיתות', icon: 'monitor' },
+      { value: 'library', label: 'ספריות', icon: 'book-open' },
+      { value: 'lab', label: 'מעבדות', icon: 'monitor' },
+      { value: 'cafe', label: 'קפיטריות', icon: 'coffee' },
+    ];
+
+    const buildings = [
+      { value: 'all', label: 'כל הבניינים' },
+      { value: 'engineering', label: 'בניין הנדסה' },
+      { value: 'library', label: 'ספרייה מרכזית' },
+      { value: 'science', label: 'בניין מדעים' },
+      { value: 'student', label: 'בית הסטודנט' },
+    ];
+
+    const spaces = [
+      { id: 1, name: 'כיתה 204', building: 'בניין הנדסה', floor: 2, type: 'classroom', status: 'available' },
+      { id: 2, name: 'חדר קריאה שקט 3', building: 'ספרייה מרכזית', floor: 2, type: 'library', status: 'available' },
+      { id: 3, name: 'מעבדת מחשבים 5', building: 'בניין הנדסה', floor: 1, type: 'lab', status: 'busy' },
+      { id: 4, name: 'כיתה 301', building: 'בניין מדעים', floor: 3, type: 'classroom', status: 'available' },
+      { id: 5, name: 'אזור למידה פתוח', building: 'בית הסטודנט', floor: 1, type: 'library', status: 'available' },
+      { id: 6, name: 'כיתה 102', building: 'בניין הנדסה', floor: 1, type: 'classroom', status: 'busy' },
+      { id: 7, name: 'חדר סמינרים A', building: 'ספרייה מרכזית', floor: 3, type: 'classroom', status: 'available' },
+      { id: 8, name: 'מעבדה 3', building: 'בניין מדעים', floor: 1, type: 'lab', status: 'available' },
+    ];
+
+    const typeLabels = { classroom: 'כיתה', library: 'ספרייה', lab: 'מעבדה', cafe: 'קפיטריה' };
+
+    // -----------------------------
+    // State
+    // -----------------------------
+    let searchQuery = '';
+    let selectedType = 'all';
+    let selectedBuilding = 'all';
+    let selectedFloor = 'all';
+    let statusFilter = 'all';
+
+    // -----------------------------
+    // Elements
+    // -----------------------------
+    const searchInput = document.getElementById('searchInput');
+    const typeChips = document.getElementById('typeChips');
+    const resultsGrid = document.getElementById('resultsGrid');
+    const resultCount = document.getElementById('resultCount');
+
+    const buildingSelect = document.getElementById('buildingSelect');
+    const floorSelect = document.getElementById('floorSelect');
+    const statusSelect = document.getElementById('statusSelect');
+
+    const openFiltersBtn = document.getElementById('openFiltersBtn');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+    const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    const drawer = document.getElementById('drawer');
+    const backdrop = document.getElementById('backdrop');
+
+    // -----------------------------
+    // Drawer helpers
+    // -----------------------------
+    function openDrawer() {
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+
+    // -----------------------------
+    // Render chips
+    // -----------------------------
+    function renderTypeChips() {
+      typeChips.innerHTML = spaceTypes.map(t => {
+        const isSelected = selectedType === t.value;
+        return `
+          <button
+            data-type="${t.value}"
+            class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md border transition
+              ${isSelected ? 'bg-sky-600 text-white border-sky-600' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'}"
+          >
+            <i data-lucide="${t.icon}" class="w-4 h-4"></i>
+            <span class="text-sm font-medium">${t.label}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------
+    // Filter logic (same rules as React)
+    // -----------------------------
+    function getFilteredSpaces() {
+      return spaces.filter(space => {
+        if (searchQuery) {
+          const q = searchQuery.trim();
+          if (q && !space.name.includes(q) && !space.building.includes(q)) return false;
+        }
+
+        if (selectedType !== 'all' && space.type !== selectedType) return false;
+
+        if (selectedBuilding !== 'all') {
+          const buildingLabel = buildings.find(b => b.value === selectedBuilding)?.label;
+          if (space.building !== buildingLabel) return false;
+        }
+
+        if (selectedFloor !== 'all') {
+          const f = parseInt(selectedFloor, 10);
+          if (space.floor !== f) return false;
+        }
+
+        if (statusFilter === 'available' && space.status !== 'available') return false;
+        if (statusFilter === 'busy' && space.status !== 'busy') return false;
+
+        return true;
+      });
+    }
+
+    // -----------------------------
+    // Render results
+    // -----------------------------
+    function renderResults() {
+      const filtered = getFilteredSpaces();
+      resultCount.textContent = filtered.length;
+
+      resultsGrid.innerHTML = filtered.map(space => {
+        const isAvailable = space.status === 'available';
+        const pill = isAvailable
+          ? 'bg-emerald-100 text-emerald-700'
+          : 'bg-red-100 text-red-700';
+
+        const border = isAvailable
+          ? 'border-r-4 border-r-emerald-500'
+          : 'border-r-4 border-r-red-500';
+
+        const iconWrap = isAvailable ? 'bg-emerald-50' : 'bg-red-50';
+        const iconName = isAvailable ? 'check-circle-2' : 'x-circle';
+        const iconColor = isAvailable ? 'text-emerald-600' : 'text-red-600';
+
+        const typeLabel = typeLabels[space.type] || space.type;
+
+        return `
+          <a href="#space?id=${space.id}" class="block">
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden ${border}">
+              <div class="p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4 flex-1">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center ${iconWrap}">
+                      <i data-lucide="${iconName}" class="w-6 h-6 ${iconColor}"></i>
+                    </div>
+
+                    <div class="flex-1">
+                      <h3 class="font-semibold text-slate-800 text-lg">${space.name}</h3>
+                      <div class="flex items-center gap-3 mt-1 flex-wrap">
+                        <p class="text-sm text-slate-500">${space.building}</p>
+                        <span class="text-slate-300">•</span>
+                        <p class="text-sm text-slate-500">קומה ${space.floor}</p>
+                        <span class="text-slate-300">•</span>
+                        <p class="text-sm text-slate-500">${typeLabel}</p>
+                      </div>
+                    </div>
+
+                    <span class="px-4 py-2 rounded-lg font-medium ${pill}">
+                      ${isAvailable ? 'פנוי' : 'תפוס'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      // Recreate icons after injecting HTML
+      lucide.createIcons();
+    }
+
+    // -----------------------------
+    // Init selects
+    // -----------------------------
+    function initBuildingSelect() {
+      buildingSelect.innerHTML = buildings.map(b => `
+        <option value="${b.value}">${b.label}</option>
+      `).join('');
+      buildingSelect.value = selectedBuilding;
+    }
+
+    function syncDrawerControls() {
+      buildingSelect.value = selectedBuilding;
+      floorSelect.value = selectedFloor;
+      statusSelect.value = statusFilter;
+    }
+
+    // -----------------------------
+    // Events
+    // -----------------------------
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value || '';
+      renderResults();
+    });
+
+    typeChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-type]');
+      if (!btn) return;
+      selectedType = btn.getAttribute('data-type');
+      renderTypeChips();
+      renderResults();
+      lucide.createIcons();
+    });
+
+    openFiltersBtn.addEventListener('click', () => {
+      syncDrawerControls();
+      openDrawer();
+    });
+
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+
+    applyFiltersBtn.addEventListener('click', () => {
+      selectedBuilding = buildingSelect.value;
+      selectedFloor = floorSelect.value;
+      statusFilter = statusSelect.value;
+      closeDrawer();
+      renderResults();
+    });
+
+    clearFiltersBtn.addEventListener('click', () => {
+      selectedBuilding = 'all';
+      selectedFloor = 'all';
+      statusFilter = 'all';
+      syncDrawerControls();
+      renderResults();
+    });
+
+    // -----------------------------
+    // Boot
+    // -----------------------------
+    initBuildingSelect();
+    renderTypeChips();
+    renderResults();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
