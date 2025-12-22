@@ -1,0 +1,26 @@
+
+          "&username=" + encodeURIComponent(username) +
+          "&password=" + encodeURIComponent(password);
+
+        resultDiv.innerHTML = "Checking...";
+        resultDiv.className = "mt-3 text-center text-secondary fw-bold";
+
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            if (data.flag === true) {
+              resultDiv.innerHTML = "✅ Login successful";
+              resultDiv.className = "mt-3 text-center text-success fw-bold";
+            } else {
+              resultDiv.innerHTML = "❌ Invalid credentials";
+              resultDiv.className = "mt-3 text-center text-danger fw-bold";
+            }
+          })
+          .catch(() => {
+            resultDiv.innerHTML = "❌ Server error";
+            resultDiv.className = "mt-3 text-center text-danger fw-bold";
+          });
+      });
+    </script>
+  </body>
+</html>
