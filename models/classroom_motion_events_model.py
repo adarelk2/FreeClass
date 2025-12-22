@@ -1,11 +1,10 @@
 # models/classroom_motion_events_model.py
 from __future__ import annotations
-
 from typing import Any, Dict, List, Optional
-
 from core.mysql import MySQL
+from core.model_base import ModelBase
 
-class ClassroomMotionEventsModel:
+class ClassroomMotionEventsModel(ModelBase):
     """
 
 +--------------+------------------+------+-----+----------------------+-------------------+
@@ -23,11 +22,9 @@ class ClassroomMotionEventsModel:
 
     """
 
-    TABLE = "classroom_motion_events"
-
     def __init__(self, db: MySQL) -> None:
+        super().__init__("classroom_motion_events")
         self.db = db
-
 
     def create(self, data: Dict[str, Any]) -> int:
         if not data:

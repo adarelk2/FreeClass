@@ -3,17 +3,13 @@ from models.sensors_model import SensorsModel
 from models.building_model import BuildingModel
 from models.class_rooms_model import ClassRoomsModel
 from models.classroom_motion_events_model import ClassroomMotionEventsModel
+from core.controller_base import ControllerBase
+
 
 # app/controllers/home_controller.py
-class DashboardadminController:
+class DashboardadminController(ControllerBase):
     def print(self, params):
-        return {
-                "template": "pages/admin-dashboard.html",
-                "context": {
-                    "page": "home",
-                    },
-                "status": 200,
-                }
+        return self.responseHTML({"page": "home"}, "admin-dashboard")
 
     def createNewActivty(self, params):
         sensor_model = SensorsModel(db)

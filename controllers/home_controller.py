@@ -1,8 +1,9 @@
 from core.database import db
 from models.class_rooms_model import ClassRoomsModel
+from core.controller_base import ControllerBase
 
 # app/controllers/home_controller.py
-class HomeController:
+class HomeController(ControllerBase):
     def print(self, params):
         buildings = [
             {"id": 1, "name": "בניין הנדסה", "availableRooms": 8, "totalRooms": 15, "color": "#0ea5e9"},
@@ -24,13 +25,11 @@ class HomeController:
             {"name": "חדר סמינרים A", "building": "ספרייה מרכזית", "floor": 3},
         ]
 
-        return {
-            "template": "pages/index.html",
-            "context": {
+        context = {
                 "page": "home",
                 "buildings_server": buildings,
                 "recentSpaces_server": recent_spaces,
                 "available_now_server": available_now
-            },
-            "status": 200,
-        }
+            }
+
+        return self.responseHTML(context, "index")

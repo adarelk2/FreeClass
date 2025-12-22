@@ -1,12 +1,10 @@
 # models/sensors_model.py
 from __future__ import annotations
-
 from typing import Any, Dict, List, Optional
-
 from core.mysql import MySQL
+from core.model_base import ModelBase
 
-
-class SensorsModel:
+class SensorsModel(ModelBase):
     """
     Sensors table model בלבד.
 
@@ -25,9 +23,8 @@ class SensorsModel:
     - room_id should reference classrooms(id).
     """
 
-    TABLE = "sensors"
-
     def __init__(self, db: MySQL) -> None:
+        super().__init__("sensors")
         self.db = db
 
     # ---------- Create ----------
