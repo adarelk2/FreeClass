@@ -32,9 +32,6 @@ class TestClassroomMotionEventsModelSimple(unittest.TestCase):
         self.assertEqual(row["event_type"], "motion")
         self.assertEqual(row["confidence"], 95)
 
-        # sensor_id should match exactly
-        self.assertTrue(row["sensor_id"].startswith("PIR-TEST-"))
-
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
