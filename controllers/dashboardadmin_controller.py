@@ -59,9 +59,10 @@ class DashboardadminController(ControllerBase):
         #make auth for admin important!
         building_name = params.get("building_name", "")
         floors= params.get("floors", 0)
+        color= params.get("color", "#000")
         building_model = BuildingModel(db)
 
-        id = building_model.create({"building_name": building_name, "floors": floors})
+        id = building_model.create({"building_name": building_name, "floors": floors, "color": color})
         if id:
             return {"json": {"flag":True, "id":id}}
 

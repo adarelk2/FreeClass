@@ -2,7 +2,6 @@ from flask import Flask, request
 from core.database import db
 from core.application import Application
 
-db.connect()
 app = Flask(__name__)
 application = Application()
 
