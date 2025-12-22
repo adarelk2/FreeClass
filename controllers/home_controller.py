@@ -34,16 +34,3 @@ class HomeController:
             },
             "status": 200,
         }
-
-    def makeLogin(self, params):
-        return {
-            "json": {
-                "totalBuildings": 4,
-                "totalRooms": 55,
-                "availableRooms": 28
-            },
-            "status": 200
-        }
-         
-    def index(self, params):
-        return self.print(params)
