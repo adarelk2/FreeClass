@@ -6,7 +6,7 @@ db.connect()
 app = Flask(__name__)
 application = Application()
 
-@app.get("/<controller>")
+@app.route("/<controller>", methods=["GET", "POST"])
 def dispatch(controller):
     return application.handle(request, controller)
 
