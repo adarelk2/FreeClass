@@ -223,5 +223,3 @@ class MySQL:
             return cursor.fetchall()
         finally:
             cursor.close()
-
-        
