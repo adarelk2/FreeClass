@@ -1,12 +1,10 @@
 # models/classrooms_model.py
 from __future__ import annotations
-
 from typing import Any, Dict, List, Optional
-
 from core.mysql import MySQL
+from core.model_base import ModelBase
 
-
-class ClassRoomsModel:
+class ClassRoomsModel(ModelBase):
     """
    
 +--------------+--------------+------+-----+---------+----------------+
@@ -20,9 +18,8 @@ class ClassRoomsModel:
 
     """
 
-    TABLE = "classrooms"
-
     def __init__(self, db: MySQL) -> None:
+        super().__init__("classrooms")
         self.db = db
 
 
@@ -40,7 +37,6 @@ class ClassRoomsModel:
         rows = self.db.select(self.TABLE, {"id": classroom_id})
         return rows[0] if rows else None
 
-  
 
     def list_by_building(self, building_id: int) -> List[Dict[str, Any]]:
         return self.db.select(self.TABLE, {"id_building": building_id})

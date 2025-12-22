@@ -1,7 +1,7 @@
 # core/mysql.py
 from __future__ import annotations
 
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List, Tuple
 
 import mysql.connector
 from mysql.connector import MySQLConnection
@@ -11,12 +11,10 @@ class MySQL:
     """
     Minimal MySQL connection wrapper.
 
-    Current:
-    - connect / close only
-    - select/insert/update will be added next
-
     Notes:
     - Supports managed DBs (e.g., Aiven) with SSL and connection timeout.
+    - Provides CRUD helpers: select/insert/update/delete.
+    - select() supports simple equality AND filters (Dict[str, Any]).
     """
 
     def __init__(
@@ -42,9 +40,7 @@ class MySQL:
         self._conn: Optional[MySQLConnection] = None
 
     def connect(self) -> None:
-        """
-        Opens a connection if not connected.
-        """
+        """Opens a connection if not connected."""
         if self._conn is not None and self._conn.is_connected():
             return
 
@@ -66,9 +62,7 @@ class MySQL:
         self._conn = mysql.connector.connect(**kwargs)
 
     def close(self) -> None:
-        """
-        Closes the connection if open.
-        """
+        """Closes the connection if open."""
         if self._conn is None:
             return
 
@@ -79,13 +73,70 @@ class MySQL:
 
     @property
     def connection(self) -> MySQLConnection:
-        """
-        Exposes the raw connection (useful internally later).
-        Ensures connection exists before returning.
-        """
+        """Exposes the raw connection. Ensures connection exists before returning."""
         self.connect()
         assert self._conn is not None
         return self._conn
+
+    # ---------------------------------
+    # helpers
+    # ---------------------------------
+
+    def _build_where(self, filters: Dict[str, Any]) -> Tuple[str, List[Any]]:
+        """
+        Builds WHERE clause using equality AND only.
+        Returns: (where_sql, values)
+        """
+        where_clauses: List[str] = []
+        values: List[Any] = []
+
+        for column, value in filters.items():
+            where_clauses.append(f"{column} = %s")
+            values.append(value)
+
+        if not where_clauses:
+            return "", []
+
+        return " WHERE " + " AND ".join(where_clauses), values
+
+    def _build_order_limit_offset(
+        self,
+        order_by: Optional[str],
+        limit: Optional[int],
+        offset: Optional[int],
+    ) -> str:
+        """
+        order_by:
+          - "id" => ORDER BY id ASC
+          - "-id" => ORDER BY id DESC
+        """
+        sql_parts: List[str] = []
+
+        if order_by:
+            direction = "ASC"
+            col = order_by
+            if order_by.startswith("-"):
+                direction = "DESC"
+                col = order_by[1:]
+            # naive validation: allow only simple identifier chars
+            if not col.replace("_", "").isalnum():
+                raise ValueError("order_by contains invalid characters")
+            sql_parts.append(f" ORDER BY {col} {direction}")
+
+        if limit is not None:
+            if limit <= 0:
+                raise ValueError("limit must be > 0")
+            sql_parts.append(" LIMIT %s")
+
+        if offset is not None:
+            if offset < 0:
+                raise ValueError("offset must be >= 0")
+            # MySQL requires LIMIT when using OFFSET; enforce it.
+            if limit is None:
+                raise ValueError("offset requires limit")
+            sql_parts.append(" OFFSET %s")
+
+        return "".join(sql_parts)
 
     # ---------------------------------
     # UPDATE
@@ -98,37 +149,28 @@ class MySQL:
         where: Dict[str, Any],
     ) -> int:
         """
-        filter example (SET):
-        {
-            "name": "test",
-            "age": 27
-        }
+        filter (SET) example:
+        {"name": "test", "age": 27}
 
-        where example (WHERE):
-        {
-            "userid": 5
-        }
+        where example:
+        {"id": 5}
 
         Returns:
             number of affected rows
         """
-
         if not filter:
             raise ValueError("UPDATE requires at least one field to update")
-
         if not where:
             raise ValueError("UPDATE without WHERE is not allowed")
 
-        set_clauses = []
-        where_clauses = []
-        values = []
+        set_clauses: List[str] = []
+        where_clauses: List[str] = []
+        values: List[Any] = []
 
-        # SET part
         for column, value in filter.items():
             set_clauses.append(f"{column} = %s")
             values.append(value)
 
-        # WHERE part
         for column, value in where.items():
             where_clauses.append(f"{column} = %s")
             values.append(value)
@@ -157,31 +199,24 @@ class MySQL:
     ) -> Optional[int]:
         """
         data example:
-        {
-            "name": "test",
-            "age": 27
-        }
+        {"name": "test", "age": 27}
 
         Returns:
             last inserted id (if available)
         """
-
         if not data:
             raise ValueError("INSERT requires at least one field")
 
-        columns = []
-        placeholders = []
-        values = []
+        columns: List[str] = []
+        placeholders: List[str] = []
+        values: List[Any] = []
 
         for column, value in data.items():
             columns.append(column)
             placeholders.append("%s")
             values.append(value)
 
-        columns_sql = ", ".join(columns)
-        placeholders_sql = ", ".join(placeholders)
-
-        query = f"INSERT INTO {tbname} ({columns_sql}) VALUES ({placeholders_sql})"
+        query = f"INSERT INTO {tbname} ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
 
         cursor = self.connection.cursor()
         try:
@@ -191,35 +226,75 @@ class MySQL:
         finally:
             cursor.close()
 
+    # ---------------------------------
+    # SELECT
+    # ---------------------------------
+
     def select(
         self,
         tbname: str,
-        filters: Dict[str, Any],
+        filters: Optional[Dict[str, Any]] = None,
+        *,
+        order_by: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
-        filters example:
-        {
-            "userid": 5,
-            "name": "adar"
-        }
+        filters example (equality AND only):
+        {"id": 5, "name": "adar"}
+
+        order_by:
+          "id" or "-id"
+
+        limit/offset optional (offset requires limit).
         """
+        filters = filters or {}
 
-        where_clauses: List[str] = []
-        values: List[Any] = []
+        where_sql, values = self._build_where(filters)
+        tail_sql = self._build_order_limit_offset(order_by, limit, offset)
 
-        for column, value in filters.items():
-            where_clauses.append(f"{column} = %s")
-            values.append(value)
+        query = f"SELECT * FROM {tbname}{where_sql}{tail_sql}"
 
-        where_sql = ""
-        if where_clauses:
-            where_sql = " WHERE " + " AND ".join(where_clauses)
-
-        query = f"SELECT * FROM {tbname}{where_sql}"
+        # add limit/offset parameters at the end
+        if limit is not None:
+            values.append(limit)
+        if offset is not None:
+            values.append(offset)
 
         cursor = self.connection.cursor(dictionary=True)
         try:
             cursor.execute(query, tuple(values))
             return cursor.fetchall()
+        finally:
+            cursor.close()
+
+    # ---------------------------------
+    # DELETE
+    # ---------------------------------
+
+    def delete(
+        self,
+        tbname: str,
+        where: Dict[str, Any],
+    ) -> int:
+        """
+        Safe delete: WHERE is mandatory.
+        where example:
+        {"id": 5}
+
+        Returns:
+            number of affected rows
+        """
+        if not where:
+            raise ValueError("DELETE without WHERE is not allowed")
+
+        where_sql, values = self._build_where(where)
+        query = f"DELETE FROM {tbname}{where_sql}"
+
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(query, tuple(values))
+            self.connection.commit()
+            return cursor.rowcount
         finally:
             cursor.close()
