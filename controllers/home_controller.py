@@ -1,11 +1,9 @@
 from core.database import db
-from models.building_model import BuildingModel
+from models.class_rooms_model import ClassRoomsModel
 
 # app/controllers/home_controller.py
 class HomeController:
     def print(self, params):
-        model = BuildingModel(db)
-        model.test()
         buildings = [
             {"id": 1, "name": "בניין הנדסה", "availableRooms": 8, "totalRooms": 15, "color": "#0ea5e9"},
             {"id": 2, "name": "ספרייה מרכזית", "availableRooms": 3, "totalRooms": 12, "color": "#f59e0b"},
