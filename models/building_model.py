@@ -8,13 +8,16 @@ class BuildingModel(ModelBase):
     """
     Buildings table model בלבד.
    
+
 +---------------+--------------+------+-----+---------+----------------+
 | Field         | Type         | Null | Key | Default | Extra          |
 +---------------+--------------+------+-----+---------+----------------+
 | id            | int unsigned | NO   | PRI | NULL    | auto_increment |
 | building_name | varchar(255) | NO   |     | NULL    |                |
 | floors        | int          | NO   |     | NULL    |                |
+| color         | varchar(16)  | NO   |     | #000    |                |
 +---------------+--------------+------+-----+---------+----------------+
+
 
     """
 

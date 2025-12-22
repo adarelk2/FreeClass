@@ -3,18 +3,16 @@ from __future__ import annotations
 
 from typing import Optional, Any, Dict, List, Tuple
 
+import re
 import mysql.connector
 from mysql.connector import MySQLConnection
 
 
 class MySQL:
     """
-    Minimal MySQL connection wrapper.
-
-    Notes:
-    - Supports managed DBs (e.g., Aiven) with SSL and connection timeout.
-    - Provides CRUD helpers: select/insert/update/delete.
-    - select() supports simple equality AND filters (Dict[str, Any]).
+    Minimal MySQL wrapper with:
+    - insert/update/delete
+    - select with ADT-style filters + safe-ish order_by + limit/offset
     """
 
     def __init__(
@@ -24,80 +22,41 @@ class MySQL:
         password: str,
         database: str,
         port: int = 3306,
-        *,
-        connection_timeout: int = 10,
         ssl_required: bool = True,
     ) -> None:
-        self._host = host
-        self._user = user
-        self._password = password
-        self._database = database
-        self._port = port
+        self.connection: MySQLConnection = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+            port=port,
+            ssl_disabled=(not ssl_required),
+        )
 
-        self._connection_timeout = connection_timeout
-        self._ssl_required = ssl_required
-
-        self._conn: Optional[MySQLConnection] = None
-
-    def connect(self) -> None:
-        """Opens a connection if not connected."""
-        if self._conn is not None and self._conn.is_connected():
-            return
-
-        kwargs: Dict[str, Any] = {
-            "host": self._host,
-            "user": self._user,
-            "password": self._password,
-            "database": self._database,
-            "port": self._port,
-            "connection_timeout": self._connection_timeout,
-        }
-
-        # For managed DBs (Aiven etc.) TLS is usually required.
-        if self._ssl_required:
-            # mysql-connector uses TLS by default if available,
-            # but we force "not disabled" to avoid accidental plaintext.
-            kwargs["ssl_disabled"] = False
-
-        self._conn = mysql.connector.connect(**kwargs)
-
-    def close(self) -> None:
-        """Closes the connection if open."""
-        if self._conn is None:
-            return
-
-        if self._conn.is_connected():
-            self._conn.close()
-
-        self._conn = None
-
-    @property
-    def connection(self) -> MySQLConnection:
-        """Exposes the raw connection. Ensures connection exists before returning."""
-        self.connect()
-        assert self._conn is not None
-        return self._conn
+        self.connection.autocommit = True
 
     # ---------------------------------
-    # helpers
+    # INTERNAL HELPERS
     # ---------------------------------
 
     def _build_where(self, filters: Dict[str, Any]) -> Tuple[str, List[Any]]:
         """
-        Builds WHERE clause using equality AND only.
-        Returns: (where_sql, values)
+        Builds: " WHERE a=%s AND b=%s" and values list
+        Equality AND only.
         """
-        where_clauses: List[str] = []
-        values: List[Any] = []
-
-        for column, value in filters.items():
-            where_clauses.append(f"{column} = %s")
-            values.append(value)
-
-        if not where_clauses:
+        if not filters:
             return "", []
 
-        return " WHERE " + " AND ".join(where_clauses), values
+        parts: List[str] = []
+        values: List[Any] = []
+        for k, v in filters.items():
+            # allow only simple identifier chars for column names
+            if not str(k).replace("_", "").isalnum():
+                raise ValueError("filter key contains invalid characters")
+            parts.append(f"{k}=%s")
+            values.append(v)
+
+        return " WHERE " + " AND ".join(parts), values
 
     def _build_order_limit_offset(
         self,
@@ -106,22 +65,65 @@ class MySQL:
         offset: Optional[int],
     ) -> str:
         """
-        order_by:
+        order_by supports:
           - "id" => ORDER BY id ASC
           - "-id" => ORDER BY id DESC
+          - "event_time DESC"
+          - "event_time ASC"
+          - "event_time DESC, id DESC"  (multi-column)
+
+        Notes:
+        - This is still an ADT-friendly interface: caller does NOT pass raw SQL beyond
+          a constrained ORDER BY expression.
+        - We validate identifiers to reduce injection risk.
         """
         sql_parts: List[str] = []
 
         if order_by:
-            direction = "ASC"
-            col = order_by
-            if order_by.startswith("-"):
-                direction = "DESC"
-                col = order_by[1:]
-            # naive validation: allow only simple identifier chars
-            if not col.replace("_", "").isalnum():
-                raise ValueError("order_by contains invalid characters")
-            sql_parts.append(f" ORDER BY {col} {direction}")
+            ob = order_by.strip()
+            if not ob:
+                raise ValueError("order_by cannot be empty")
+
+            order_terms: List[str] = []
+
+            for raw_term in ob.split(","):
+                term = raw_term.strip()
+                if not term:
+                    continue
+
+                # Support "-col" shorthand
+                if term.startswith("-"):
+                    col = term[1:].strip()
+                    direction = "DESC"
+                    if not col:
+                        raise ValueError("order_by contains invalid characters")
+                else:
+                    # Support "col" or "col ASC/DESC"
+                    parts = term.split()
+                    if len(parts) == 1:
+                        col = parts[0]
+                        direction = "ASC"
+                    elif len(parts) == 2:
+                        col = parts[0]
+                        direction = parts[1].upper()
+                        if direction not in ("ASC", "DESC"):
+                            raise ValueError("order_by direction must be ASC or DESC")
+                    else:
+                        raise ValueError("order_by format is invalid")
+
+                # allow backticks around identifiers
+                col_clean = col.strip()
+                if col_clean.startswith("`") and col_clean.endswith("`") and len(col_clean) >= 3:
+                    col_clean = col_clean[1:-1]
+
+                # strict identifier validation: letters/numbers/underscore only
+                if not re.fullmatch(r"[A-Za-z0-9_]+", col_clean):
+                    raise ValueError("order_by contains invalid characters")
+
+                order_terms.append(f"{col_clean} {direction}")
+
+            if order_terms:
+                sql_parts.append(" ORDER BY " + ", ".join(order_terms))
 
         if limit is not None:
             if limit <= 0:
@@ -137,94 +139,6 @@ class MySQL:
             sql_parts.append(" OFFSET %s")
 
         return "".join(sql_parts)
-
-    # ---------------------------------
-    # UPDATE
-    # ---------------------------------
-
-    def update(
-        self,
-        tbname: str,
-        filter: Dict[str, Any],
-        where: Dict[str, Any],
-    ) -> int:
-        """
-        filter (SET) example:
-        {"name": "test", "age": 27}
-
-        where example:
-        {"id": 5}
-
-        Returns:
-            number of affected rows
-        """
-        if not filter:
-            raise ValueError("UPDATE requires at least one field to update")
-        if not where:
-            raise ValueError("UPDATE without WHERE is not allowed")
-
-        set_clauses: List[str] = []
-        where_clauses: List[str] = []
-        values: List[Any] = []
-
-        for column, value in filter.items():
-            set_clauses.append(f"{column} = %s")
-            values.append(value)
-
-        for column, value in where.items():
-            where_clauses.append(f"{column} = %s")
-            values.append(value)
-
-        set_sql = ", ".join(set_clauses)
-        where_sql = " AND ".join(where_clauses)
-
-        query = f"UPDATE {tbname} SET {set_sql} WHERE {where_sql}"
-
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query, tuple(values))
-            self.connection.commit()
-            return cursor.rowcount
-        finally:
-            cursor.close()
-
-    # ---------------------------------
-    # INSERT
-    # ---------------------------------
-
-    def insert(
-        self,
-        tbname: str,
-        data: Dict[str, Any],
-    ) -> Optional[int]:
-        """
-        data example:
-        {"name": "test", "age": 27}
-
-        Returns:
-            last inserted id (if available)
-        """
-        if not data:
-            raise ValueError("INSERT requires at least one field")
-
-        columns: List[str] = []
-        placeholders: List[str] = []
-        values: List[Any] = []
-
-        for column, value in data.items():
-            columns.append(column)
-            placeholders.append("%s")
-            values.append(value)
-
-        query = f"INSERT INTO {tbname} ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
-
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query, tuple(values))
-            self.connection.commit()
-            return cursor.lastrowid
-        finally:
-            cursor.close()
 
     # ---------------------------------
     # SELECT
@@ -244,7 +158,7 @@ class MySQL:
         {"id": 5, "name": "adar"}
 
         order_by:
-          "id" or "-id"
+          "id" or "-id" or "event_time DESC" or "event_time DESC, id DESC"
 
         limit/offset optional (offset requires limit).
         """
@@ -269,24 +183,70 @@ class MySQL:
             cursor.close()
 
     # ---------------------------------
+    # INSERT
+    # ---------------------------------
+
+    def insert(self, tbname: str, data: Dict[str, Any]) -> Optional[int]:
+        if not data:
+            raise ValueError("insert() requires data")
+
+        cols = list(data.keys())
+        for c in cols:
+            if not str(c).replace("_", "").isalnum():
+                raise ValueError("insert key contains invalid characters")
+
+        placeholders = ", ".join(["%s"] * len(cols))
+        columns_sql = ", ".join(cols)
+        values = [data[c] for c in cols]
+
+        query = f"INSERT INTO {tbname} ({columns_sql}) VALUES ({placeholders})"
+
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(query, tuple(values))
+            self.connection.commit()
+            return cursor.lastrowid
+        finally:
+            cursor.close()
+
+    # ---------------------------------
+    # UPDATE
+    # ---------------------------------
+
+    def update(self, tbname: str, data: Dict[str, Any], where: Dict[str, Any]) -> int:
+        if not data:
+            raise ValueError("update() requires data")
+        if not where:
+            raise ValueError("update() requires where")
+
+        set_parts: List[str] = []
+        values: List[Any] = []
+        for k, v in data.items():
+            if not str(k).replace("_", "").isalnum():
+                raise ValueError("update key contains invalid characters")
+            set_parts.append(f"{k}=%s")
+            values.append(v)
+
+        where_sql, where_values = self._build_where(where)
+        values.extend(where_values)
+
+        query = f"UPDATE {tbname} SET " + ", ".join(set_parts) + where_sql
+
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(query, tuple(values))
+            self.connection.commit()
+            return cursor.rowcount
+        finally:
+            cursor.close()
+
+    # ---------------------------------
     # DELETE
     # ---------------------------------
 
-    def delete(
-        self,
-        tbname: str,
-        where: Dict[str, Any],
-    ) -> int:
-        """
-        Safe delete: WHERE is mandatory.
-        where example:
-        {"id": 5}
-
-        Returns:
-            number of affected rows
-        """
+    def delete(self, tbname: str, where: Dict[str, Any]) -> int:
         if not where:
-            raise ValueError("DELETE without WHERE is not allowed")
+            raise ValueError("delete() requires where")
 
         where_sql, values = self._build_where(where)
         query = f"DELETE FROM {tbname}{where_sql}"
