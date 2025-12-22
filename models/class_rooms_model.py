@@ -1,4 +1,4 @@
-# models/building_model.py
+# models/classrooms_model.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -6,15 +6,15 @@ from typing import Any, Dict, List, Optional
 from core.mysql import MySQL
 
 
-class BuildingModel:
+class ClassRoomsModel:
     """
-    Buildings table model בלבד.
-    טבלה: buildings (id, building_name, floors, ...)
+    Classrooms table model בלבד.
+    טבלה: classrooms (id, id_building, floor, class_number)
 
-    No joins. No dashboard logic. No cross-table queries.
+    No joins. No status logic. No dashboard queries.
     """
 
-    TABLE = "buildings"
+    TABLE = "classrooms"
 
     def __init__(self, db: MySQL) -> None:
         self.db = db
@@ -25,12 +25,12 @@ class BuildingModel:
 
     def create(self, data: Dict[str, Any]) -> int:
         """
-        Insert a new building.
+        Insert a new classroom.
 
-        Expected minimal fields:
-          - building_name
-          - floors
-        But we allow any extra columns you have in buildings.
+        Expected fields:
+          - id_building
+          - floor
+          - class_number
 
         Returns:
           inserted id
@@ -47,15 +47,11 @@ class BuildingModel:
     # READ
     # ----------------------------
 
-    def get_by_id(self, building_id: int) -> Optional[Dict[str, Any]]:
-        rows = self.db.select(self.TABLE, {"id": building_id})
+    def get_by_id(self, classroom_id: int) -> Optional[Dict[str, Any]]:
+        rows = self.db.select(self.TABLE, {"id": classroom_id})
         return rows[0] if rows else None
 
     def list_all(self) -> List[Dict[str, Any]]:
-        """
-        List all buildings.
-        This is still 'buildings only' and does not join or aggregate.
-        """
         cursor = self.db.connection.cursor(dictionary=True)
         try:
             cursor.execute(f"SELECT * FROM {self.TABLE} ORDER BY id ASC")
@@ -63,10 +59,29 @@ class BuildingModel:
         finally:
             cursor.close()
 
-    def exists(self, building_id: int) -> bool:
+    def list_by_building(self, building_id: int) -> List[Dict[str, Any]]:
+        """
+        List classrooms for a given building.
+        Still classrooms-only (no joins).
+        """
+        return self.db.select(self.TABLE, {"id_building": building_id})
+
+    def list_by_floor(self, building_id: int, floor: int) -> List[Dict[str, Any]]:
+        return self.db.select(
+            self.TABLE,
+            {
+                "id_building": building_id,
+                "floor": floor,
+            },
+        )
+
+    def exists(self, classroom_id: int) -> bool:
         cursor = self.db.connection.cursor()
         try:
-            cursor.execute(f"SELECT 1 FROM {self.TABLE} WHERE id = %s LIMIT 1", (building_id,))
+            cursor.execute(
+                f"SELECT 1 FROM {self.TABLE} WHERE id = %s LIMIT 1",
+                (classroom_id,),
+            )
             return cursor.fetchone() is not None
         finally:
             cursor.close()
@@ -75,32 +90,33 @@ class BuildingModel:
     # UPDATE
     # ----------------------------
 
-    def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
+    def update_by_id(self, classroom_id: int, fields: Dict[str, Any]) -> int:
         """
-        Update building by id.
+        Update classroom by id.
 
         Returns:
           affected rows
         """
         if not fields:
             raise ValueError("update_by_id() requires at least one field")
-        return self.db.update(self.TABLE, filter=fields, where={"id": building_id})
+
+        return self.db.update(
+            self.TABLE,
+            filter=fields,
+            where={"id": classroom_id},
+        )
 
     # ----------------------------
     # DELETE (optional)
     # ----------------------------
 
-    def delete_by_id(self, building_id: int) -> int:
-        """
-        Delete building by id.
-
-        NOTE: Your current MySQL wrapper doesn't have delete().
-        We implement it here as raw SQL, still buildings-only.
-        Returns affected rows.
-        """
+    def delete_by_id(self, classroom_id: int) -> int:
         cursor = self.db.connection.cursor()
         try:
-            cursor.execute(f"DELETE FROM {self.TABLE} WHERE id = %s", (building_id,))
+            cursor.execute(
+                f"DELETE FROM {self.TABLE} WHERE id = %s",
+                (classroom_id,),
+            )
             self.db.connection.commit()
             return cursor.rowcount
         finally:
