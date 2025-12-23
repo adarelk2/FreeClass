@@ -24,407 +24,605 @@
           </div>
           <div>
             <h1 class="text-xl font-bold">לוח בקרה - מנהל מערכת</h1>
-            <p class="text-sm text-slate-400">ניהול חדרים וחיישנים</p>
+            <p class="text-sm text-slate-400">ניהול כיתות וחיישנים</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <a href="dashboard.html"
-             class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-slate-600 text-slate-300 hover:bg-slate-800 transition text-sm">
-            <i data-lucide="map-pin" class="w-4 h-4"></i>
-            דשבורד סטודנטים
-          </a>
-
-          <a href="admin-login.html"
-             class="inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 transition text-sm text-slate-300">
-            <i data-lucide="log-out" class="w-4 h-4"></i>
-            התנתק
-          </a>
-        </div>
+        <a href="admin-login.html"
+           class="inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-slate-800 transition text-sm text-slate-300">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          התנתק
+        </a>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-    <!-- Quick Stats -->
-    <section class="grid grid-cols-2 lg:grid-cols-6 gap-4" id="statsGrid">
-      <!-- injected by JS -->
-    </section>
-
     <!-- Tabs -->
     <section class="w-full">
       <div class="bg-white shadow-sm p-1 rounded-xl inline-flex gap-1">
-        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="rooms">ניהול חדרים</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="rooms">ניהול כיתות</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="schedule">לוח שעות</button>
         <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="sensors">חיישנים</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition" data-tab="buildings">ניהול בניינים</button>
       </div>
 
-      <!-- Rooms Tab -->
+      <!-- Rooms -->
       <div class="tab-panel mt-6" id="tab-rooms">
         <div class="bg-white rounded-xl shadow-sm">
-          <div class="p-6 border-b border-slate-100">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 class="text-lg font-semibold text-slate-800">ניהול סטטוס חדרים</h2>
 
-              <div class="flex items-center gap-3">
-                <div class="relative">
-                  <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-                  <input id="roomSearch"
-                         placeholder="חיפוש חדר..."
-                         class="h-10 w-64 pr-9 px-3 rounded-md border border-slate-200 bg-white
-                                focus:outline-none focus:ring-2 focus:ring-sky-200" />
-                </div>
-
-                <button id="refreshBtn"
-                        class="h-10 w-10 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition inline-flex items-center justify-center"
-                        aria-label="Refresh">
-                  <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-700"></i>
-                </button>
-              </div>
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-800">ניהול כיתות</h2>
+              <p class="text-sm text-slate-500">צפייה והוספה של כיתות לפי בניין</p>
             </div>
+
+            <button id="addRoomBtn"
+                    class="h-10 px-4 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition text-sm inline-flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              הוסף כיתה
+            </button>
           </div>
 
           <div class="p-6 overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-slate-500 border-b">
-                  <th class="text-right py-3">שם חדר</th>
                   <th class="text-right py-3">בניין</th>
                   <th class="text-right py-3">קומה</th>
-                  <th class="text-right py-3">סטטוס נוכחי</th>
-                  <th class="text-right py-3">שינוי סטטוס</th>
+                  <th class="text-right py-3">מספר כיתה</th>
+                  <th class="text-right py-3">פעולות</th>
                 </tr>
               </thead>
-              <tbody id="roomsTbody" class="divide-y">
-                <!-- injected by JS -->
-              </tbody>
+              <tbody id="roomsTbody" class="divide-y"></tbody>
             </table>
+
+            <p id="roomsEmptyHint" class="mt-4 text-sm text-slate-500 hidden">
+              עדיין אין כיתות במערכת. הוסף כיתה ראשונה.
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- Schedule Tab -->
+      <!-- Schedule -->
       <div class="tab-panel mt-6 hidden" id="tab-schedule">
-        <div class="bg-white rounded-xl shadow-sm">
-          <div class="p-6 border-b border-slate-100">
-            <h2 class="text-lg font-semibold text-slate-800">
-              <i data-lucide="clock" class="w-5 h-5 inline ml-2 text-sky-600"></i>
-              עריכת לוח שעות שבועי
-            </h2>
-          </div>
-
-          <div class="p-6 space-y-3" id="scheduleList">
-            <!-- injected by JS -->
-          </div>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <p class="text-slate-600">לוח שעות שבועי</p>
         </div>
       </div>
 
-      <!-- Sensors Tab -->
+      <!-- Sensors -->
       <div class="tab-panel mt-6 hidden" id="tab-sensors">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <p class="text-slate-600">מצב חיישנים</p>
+        </div>
+      </div>
+
+      <!-- Buildings -->
+      <div class="tab-panel mt-6 hidden" id="tab-buildings">
         <div class="bg-white rounded-xl shadow-sm">
-          <div class="p-6 border-b border-slate-100">
-            <h2 class="text-lg font-semibold text-slate-800">מצב חיישנים IoT</h2>
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-slate-800">ניהול בניינים</h2>
+            <button id="addBuildingBtn"
+                    class="h-10 px-4 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition text-sm inline-flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              הוסף בניין
+            </button>
           </div>
 
           <div class="p-6 overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-slate-500 border-b">
-                  <th class="text-right py-3">חדר</th>
-                  <th class="text-right py-3">מיקום</th>
-                  <th class="text-right py-3">מצב חיישן</th>
-                  <th class="text-right py-3">עדכון אחרון</th>
+                  <th class="text-right py-3">שם בניין</th>
+                  <th class="text-right py-3">מספר כיתות</th>
+                  <th class="text-right py-3">קומות</th>
+                  <th class="text-right py-3">צבע</th>
+                  <th class="text-right py-3">פעולות</th>
                 </tr>
               </thead>
-              <tbody id="sensorsTbody" class="divide-y">
-                <!-- injected by JS -->
-              </tbody>
+              <tbody id="buildingsTbody" class="divide-y"></tbody>
             </table>
           </div>
         </div>
       </div>
 
     </section>
-
   </main>
 
-  <script>
-    // -----------------------------
-    // Data (same as React)
-    // -----------------------------
-    const stats = {
-      totalRooms: 55,
-      availableRooms: 28,
-      busyRooms: 22,
-      maintenanceRooms: 5,
-      activeSensors: 52,
-      offlineSensors: 3,
-    };
+  <!-- Add Building Modal -->
+  <div id="buildingModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div id="buildingModalBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
 
-    let rooms = [
-      { id: 1, name: 'כיתה 204', building: 'בניין הנדסה', floor: 2, status: 'available', sensorStatus: 'active', lastUpdate: '2 דקות' },
-      { id: 2, name: 'חדר קריאה שקט 3', building: 'ספרייה מרכזית', floor: 2, status: 'available', sensorStatus: 'active', lastUpdate: '1 דקה' },
-      { id: 3, name: 'מעבדת מחשבים 5', building: 'בניין הנדסה', floor: 1, status: 'busy', sensorStatus: 'offline', lastUpdate: '2 שעות' },
-      { id: 4, name: 'כיתה 301', building: 'בניין מדעים', floor: 3, status: 'available', sensorStatus: 'active', lastUpdate: '30 שניות' },
-      { id: 5, name: 'כיתה 102', building: 'בניין הנדסה', floor: 1, status: 'busy', sensorStatus: 'active', lastUpdate: '5 דקות' },
-    ];
-
-    let schedule = [
-      { day: 'ראשון', open: '08:00', close: '22:00' },
-      { day: 'שני', open: '08:00', close: '22:00' },
-      { day: 'שלישי', open: '08:00', close: '22:00' },
-      { day: 'רביעי', open: '08:00', close: '22:00' },
-      { day: 'חמישי', open: '08:00', close: '20:00' },
-      { day: 'שישי', open: '08:00', close: '14:00' },
-      { day: 'שבת', open: 'סגור', close: 'סגור' },
-    ];
-
-    // edit mode by day string
-    const editMode = {};
-
-    // -----------------------------
-    // Helpers
-    // -----------------------------
-    function badgeClass(status) {
-      if (status === 'available') return 'bg-emerald-100 text-emerald-700';
-      if (status === 'maintenance') return 'bg-amber-100 text-amber-700';
-      return 'bg-red-100 text-red-700';
-    }
-
-    function statusLabel(status) {
-      if (status === 'available') return 'פנוי';
-      if (status === 'maintenance') return 'תחזוקה';
-      return 'תפוס';
-    }
-
-    // -----------------------------
-    // Render: Stats
-    // -----------------------------
-    function renderStats() {
-      const grid = document.getElementById('statsGrid');
-
-      const items = [
-        { label: 'סה"כ חדרים', value: stats.totalRooms, valueClass: 'text-slate-800' },
-        { label: 'פנויים', value: stats.availableRooms, valueClass: 'text-emerald-600' },
-        { label: 'תפוסים', value: stats.busyRooms, valueClass: 'text-red-600' },
-        { label: 'תחזוקה', value: stats.maintenanceRooms, valueClass: 'text-amber-600' },
-        { label: 'חיישנים פעילים', value: stats.activeSensors, valueClass: 'text-sky-600' },
-        { label: 'לא מקוונים', value: stats.offlineSensors, valueClass: 'text-red-600' },
-      ];
-
-      grid.innerHTML = items.map(i => `
-        <div class="bg-white rounded-xl shadow-sm">
-          <div class="p-4 text-center">
-            <p class="text-sm text-slate-500">${i.label}</p>
-            <p class="text-2xl font-bold ${i.valueClass}">${i.value}</p>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // -----------------------------
-    // Render: Rooms table
-    // -----------------------------
-    function renderRoomsTable() {
-      const tbody = document.getElementById('roomsTbody');
-      const q = (document.getElementById('roomSearch').value || '').trim();
-
-      const filtered = rooms.filter(r => {
-        if (!q) return true;
-        return r.name.includes(q) || r.building.includes(q);
-      });
-
-      tbody.innerHTML = filtered.map(r => `
-        <tr>
-          <td class="py-3 font-medium text-slate-800">${r.name}</td>
-          <td class="py-3 text-slate-500">${r.building}</td>
-          <td class="py-3 text-slate-500">קומה ${r.floor}</td>
-          <td class="py-3">
-            <span class="${badgeClass(r.status)} inline-flex px-3 py-1 rounded-full text-xs font-medium">
-              ${statusLabel(r.status)}
-            </span>
-          </td>
-          <td class="py-3">
-            <select
-              class="h-10 w-32 rounded-md border border-slate-200 bg-white px-2
-                     focus:outline-none focus:ring-2 focus:ring-sky-200"
-              data-room-id="${r.id}"
-            >
-              <option value="available" ${r.status === 'available' ? 'selected' : ''}>פנוי</option>
-              <option value="busy" ${r.status === 'busy' ? 'selected' : ''}>תפוס</option>
-              <option value="maintenance" ${r.status === 'maintenance' ? 'selected' : ''}>תחזוקה</option>
-            </select>
-          </td>
-        </tr>
-      `).join('');
-
-      // bind selects
-      tbody.querySelectorAll('select[data-room-id]').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-          const roomId = parseInt(e.target.getAttribute('data-room-id'), 10);
-          const newStatus = e.target.value;
-          rooms = rooms.map(rr => rr.id === roomId ? { ...rr, status: newStatus } : rr);
-          renderRoomsTable();
-          renderSensorsTable(); // reflect if you want consistency
-        });
-      });
-
-      lucide.createIcons();
-    }
-
-    // -----------------------------
-    // Render: Schedule
-    // -----------------------------
-    function renderSchedule() {
-      const list = document.getElementById('scheduleList');
-
-      list.innerHTML = schedule.map(d => {
-        const isEditing = !!editMode[d.day];
-
-        if (isEditing) {
-          return `
-            <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl flex-wrap">
-              <div class="w-24 font-semibold text-slate-800">${d.day}</div>
-
-              <input type="time" value="${d.open}" data-day="${d.day}" data-field="open"
-                     class="h-10 w-32 rounded-md border border-slate-200 bg-white px-3
-                            focus:outline-none focus:ring-2 focus:ring-sky-200" />
-
-              <span class="text-slate-500">עד</span>
-
-              <input type="time" value="${d.close}" data-day="${d.day}" data-field="close"
-                     class="h-10 w-32 rounded-md border border-slate-200 bg-white px-3
-                            focus:outline-none focus:ring-2 focus:ring-sky-200" />
-
-              <button class="h-10 px-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition text-sm inline-flex items-center gap-2"
-                      data-action="save" data-day="${d.day}">
-                <i data-lucide="save" class="w-4 h-4"></i>
-                שמור
-              </button>
+    <div class="relative min-h-full flex items-center justify-center p-4">
+      <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
+              <i data-lucide="building-2" class="w-5 h-5 text-sky-700"></i>
             </div>
-          `;
-        }
+            <h3 class="text-base font-semibold text-slate-800">הוספת בניין חדש</h3>
+          </div>
 
-        return `
-          <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl flex-wrap">
-            <div class="w-24 font-semibold text-slate-800">${d.day}</div>
-            <div class="text-slate-600">${d.open} - ${d.close}</div>
+          <button id="closeBuildingModalBtn"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 transition"
+                  aria-label="סגור">
+            <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+          </button>
+        </div>
 
-            <button class="mr-auto h-10 px-3 rounded-md border border-slate-200 bg-white hover:bg-slate-100 transition text-sm inline-flex items-center gap-2"
-                    data-action="edit" data-day="${d.day}">
-              <i data-lucide="edit" class="w-4 h-4"></i>
-              ערוך
+        <form id="buildingForm" class="p-5 space-y-4">
+          <div>
+            <label for="buildingName" class="block text-sm font-medium text-slate-700 mb-1">שם בניין</label>
+            <input id="buildingName" name="name" type="text" required
+                   class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                   placeholder="למשל: בניין הנדסה" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="buildingFloors" class="block text-sm font-medium text-slate-700 mb-1">קומות</label>
+              <input id="buildingFloors" name="floors" type="number" min="1" step="1" required
+                     class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                     value="1" />
+            </div>
+
+            <div>
+              <label for="buildingColor" class="block text-sm font-medium text-slate-700 mb-1">צבע</label>
+              <div class="flex items-center gap-3">
+                <input id="buildingColor" name="color" type="color"
+                       class="h-11 w-16 rounded-lg border border-slate-200 p-1 bg-white"
+                       value="#0ea5e9" />
+                <input id="buildingColorText" type="text" readonly
+                       class="flex-1 h-11 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
+                       value="#0ea5e9" />
+              </div>
+            </div>
+          </div>
+
+          <div id="buildingFormError" class="hidden text-sm text-red-600"></div>
+
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button type="button" id="cancelBuildingBtn"
+                    class="h-10 px-4 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+              ביטול
+            </button>
+            <button type="submit"
+                    class="h-10 px-4 rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition inline-flex items-center gap-2">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              שמור
             </button>
           </div>
-        `;
-      }).join('');
+        </form>
+      </div>
+    </div>
+  </div>
 
-      // bind schedule actions
-      list.querySelectorAll('button[data-action]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const day = btn.getAttribute('data-day');
-          const action = btn.getAttribute('data-action');
+  <!-- Add Room Modal -->
+  <div id="roomModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div id="roomModalBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
 
-          if (action === 'edit') {
-            editMode[day] = true;
-            renderSchedule();
-          }
+    <div class="relative min-h-full flex items-center justify-center p-4">
+      <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-sky-50 flex items-center justify-center">
+              <i data-lucide="school" class="w-5 h-5 text-sky-700"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-800">הוספת כיתה חדשה</h3>
+          </div>
 
-          if (action === 'save') {
-            editMode[day] = false;
-            renderSchedule();
-          }
-        });
-      });
+          <button id="closeRoomModalBtn"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 transition"
+                  aria-label="סגור">
+            <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+          </button>
+        </div>
 
-      // bind inputs
-      list.querySelectorAll('input[data-day][data-field]').forEach(inp => {
-        inp.addEventListener('input', (e) => {
-          const day = e.target.getAttribute('data-day');
-          const field = e.target.getAttribute('data-field');
-          const value = e.target.value;
+        <form id="roomForm" class="p-5 space-y-4">
+          <div>
+            <label for="roomBuilding" class="block text-sm font-medium text-slate-700 mb-1">בניין</label>
+            <select id="roomBuilding" required
+                    class="w-full h-11 px-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200">
+            </select>
+            <p id="roomNoBuildingsHint" class="mt-2 text-xs text-slate-500 hidden">
+              אין בניינים עדיין. הוסף בניין קודם.
+            </p>
+          </div>
 
-          schedule = schedule.map(s => s.day === day ? { ...s, [field]: value } : s);
-        });
-      });
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="roomFloor" class="block text-sm font-medium text-slate-700 mb-1">קומה</label>
+              <input id="roomFloor" type="number" min="0" step="1" required
+                     class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                     value="1" />
+            </div>
 
-      lucide.createIcons();
+            <div>
+              <label for="roomNumber" class="block text-sm font-medium text-slate-700 mb-1">מספר כיתה</label>
+              <input id="roomNumber" type="number" min="1" step="1" required
+                     class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                     value="101" />
+            </div>
+          </div>
+
+          <div id="roomFormError" class="hidden text-sm text-red-600"></div>
+
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button type="button" id="cancelRoomBtn"
+                    class="h-10 px-4 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition">
+              ביטול
+            </button>
+            <button type="submit"
+                    class="h-10 px-4 rounded-lg bg-sky-600 text-white hover:bg-sky-700 transition inline-flex items-center gap-2">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              שמור
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // must be 'let' because we modify it (push/filter)
+    let buildings = {{ buildings_server | tojson }};
+
+    // rooms_server looks like:
+    // [
+    //   { id: 6, id_building: 15, floor: 1, class_number: 100 },
+    //   ...
+    // ]
+    let rooms = {{ rooms_server | tojson }};
+
+    // -------------------- Helpers --------------------
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     }
 
-    // -----------------------------
-    // Render: Sensors table
-    // -----------------------------
-    function renderSensorsTable() {
-      const tbody = document.getElementById('sensorsTbody');
-
-      tbody.innerHTML = rooms.map(r => {
-        const active = r.sensorStatus === 'active';
-
-        return `
-          <tr>
-            <td class="py-3 font-medium text-slate-800">${r.name}</td>
-            <td class="py-3 text-slate-500">${r.building} • קומה ${r.floor}</td>
-            <td class="py-3">
-              <div class="flex items-center gap-2">
-                ${
-                  active
-                    ? `<i data-lucide="wifi" class="w-4 h-4 text-emerald-600"></i>
-                       <span class="text-emerald-600 font-medium">פעיל</span>`
-                    : `<i data-lucide="wifi-off" class="w-4 h-4 text-red-600"></i>
-                       <span class="text-red-600 font-medium">לא מקוון</span>`
-                }
-              </div>
-            </td>
-            <td class="py-3 text-slate-500">${r.lastUpdate}</td>
-          </tr>
-        `;
-      }).join('');
-
-      lucide.createIcons();
+    function getBuildingNameById(id_building) {
+      const b = buildings.find(x => Number(x.id) === Number(id_building));
+      return b ? (b.name ?? '') : `בניין #${id_building}`;
     }
 
-    // -----------------------------
-    // Tabs
-    // -----------------------------
-    function setActiveTab(tabName) {
+    // -------------------- Tabs --------------------
+    function setActiveTab(tab) {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
 
       document.querySelectorAll('.tab-btn').forEach(b => {
-        const isActive = b.getAttribute('data-tab') === tabName;
         b.className = `tab-btn px-4 py-2 rounded-lg text-sm font-medium transition ${
-          isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+          b.dataset.tab === tab ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
         }`;
       });
     }
 
-    // -----------------------------
-    // Events
-    // -----------------------------
     document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => setActiveTab(btn.getAttribute('data-tab')));
+      btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
     });
 
-    document.getElementById('roomSearch').addEventListener('input', renderRoomsTable);
+    // -------------------- Buildings Table --------------------
+    function renderBuildingsTable() {
+      const tbody = document.getElementById('buildingsTbody');
 
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      // demo: just re-render, in real life fetch from backend
-      renderStats();
+      tbody.innerHTML = buildings.map(b => `
+        <tr>
+          <td class="py-3 font-medium text-slate-800">${escapeHtml(b.name ?? '')}</td>
+          <td class="py-3 text-slate-500">${b.totalRooms ?? '-'}</td>
+          <td class="py-3 text-slate-500">${b.floors ?? '-'}</td>
+          <td class="py-3">
+            <div class="inline-flex items-center gap-2">
+              <span class="w-4 h-4 rounded-full border border-slate-200" style="background:${b.color ?? '#94a3b8'}"></span>
+              <span class="text-slate-500">${b.color ?? '-'}</span>
+            </div>
+          </td>
+          <td class="py-3">
+            <button onclick="deleteBuilding(${b.id})"
+                    class="px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 text-sm">
+              מחק
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function deleteBuilding(id) {
+      buildings = buildings.filter(b => b.id !== id);
+      renderBuildingsTable();
+
+      // also remove rooms that belong to this building (local UI only)
+      rooms = rooms.filter(r => Number(r.id_building) !== Number(id));
       renderRoomsTable();
-      renderSchedule();
-      renderSensorsTable();
+      renderRoomBuildingsSelect();
+    }
+
+    // -------------------- Rooms Table --------------------
+    function renderRoomsTable() {
+      const tbody = document.getElementById('roomsTbody');
+      const hint = document.getElementById('roomsEmptyHint');
+
+      if (!Array.isArray(rooms) || rooms.length === 0) {
+        tbody.innerHTML = '';
+        hint.classList.remove('hidden');
+        return;
+      }
+
+      hint.classList.add('hidden');
+
+      // sort: building -> floor -> class_number
+      const sorted = [...rooms].sort((a, b) => {
+        const ab = Number(a.id_building) - Number(b.id_building);
+        if (ab !== 0) return ab;
+        const af = Number(a.floor) - Number(b.floor);
+        if (af !== 0) return af;
+        return Number(a.class_number) - Number(b.class_number);
+      });
+
+      tbody.innerHTML = sorted.map(r => `
+        <tr>
+          <td class="py-3 font-medium text-slate-800">${escapeHtml(getBuildingNameById(r.id_building))}</td>
+          <td class="py-3 text-slate-500">${r.floor ?? '-'}</td>
+          <td class="py-3 text-slate-500">${r.class_number ?? '-'}</td>
+          <td class="py-3">
+            <button onclick="deleteRoomLocal(${r.id})"
+                    class="px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 text-sm">
+              מחק
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    // local delete only (wire to server if you implement deleteRoom)
+    function deleteRoomLocal(id) {
+      rooms = rooms.filter(r => r.id !== id);
+      renderRoomsTable();
+    }
+
+    // -------------------- Building Modal --------------------
+    const buildingModal = document.getElementById('buildingModal');
+    const buildingBackdrop = document.getElementById('buildingModalBackdrop');
+    const closeBuildingModalBtn = document.getElementById('closeBuildingModalBtn');
+    const cancelBuildingBtn = document.getElementById('cancelBuildingBtn');
+    const buildingForm = document.getElementById('buildingForm');
+    const buildingErrBox = document.getElementById('buildingFormError');
+
+    const buildingNameInput = document.getElementById('buildingName');
+    const buildingFloorsInput = document.getElementById('buildingFloors');
+    const buildingColorInput = document.getElementById('buildingColor');
+    const buildingColorText = document.getElementById('buildingColorText');
+
+    function openBuildingModal() {
+      buildingErrBox.classList.add('hidden');
+      buildingErrBox.textContent = '';
+
+      buildingNameInput.value = '';
+      buildingFloorsInput.value = '1';
+      buildingColorInput.value = '#0ea5e9';
+      buildingColorText.value = '#0ea5e9';
+
+      buildingModal.classList.remove('hidden');
+      buildingModal.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => buildingNameInput.focus(), 0);
+      lucide.createIcons();
+    }
+
+    function closeBuildingModal() {
+      buildingModal.classList.add('hidden');
+      buildingModal.setAttribute('aria-hidden', 'true');
+      buildingErrBox.classList.add('hidden');
+      buildingErrBox.textContent = '';
+    }
+
+    document.getElementById('addBuildingBtn').addEventListener('click', openBuildingModal);
+    buildingBackdrop.addEventListener('click', closeBuildingModal);
+    closeBuildingModalBtn.addEventListener('click', closeBuildingModal);
+    cancelBuildingBtn.addEventListener('click', closeBuildingModal);
+
+    buildingColorInput.addEventListener('input', () => {
+      buildingColorText.value = buildingColorInput.value;
     });
 
-    // -----------------------------
-    // Boot
-    // -----------------------------
-    renderStats();
+    function showBuildingFormError(msg) {
+      buildingErrBox.textContent = msg;
+      buildingErrBox.classList.remove('hidden');
+    }
+
+    buildingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      buildingErrBox.classList.add('hidden');
+      buildingErrBox.textContent = '';
+
+      const name = buildingNameInput.value.trim();
+      const floors = parseInt(buildingFloorsInput.value, 10);
+      const color = buildingColorInput.value;
+
+      if (!name) return showBuildingFormError('חובה להזין שם בניין');
+      if (!Number.isInteger(floors) || floors < 1)
+        return showBuildingFormError('מספר קומות חייב להיות מספר שלם >= 1');
+
+      try {
+        const response = await fetch('dashboardadmin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'createNewBuilding',
+            params: {
+              building_name: name,
+              color: color,
+              floors: floors
+            }
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+
+        if (!result.flag) return showBuildingFormError('השרת סירב ליצור את הבניין');
+
+        buildings.push({
+          id: result.id,
+          name,
+          floors,
+          color,
+          totalRooms: 0
+        });
+
+        renderBuildingsTable();
+        renderRoomBuildingsSelect();
+        closeBuildingModal();
+
+      } catch (err) {
+        console.error(err);
+        showBuildingFormError('שגיאת תקשורת עם השרת');
+      }
+    });
+
+    // -------------------- Room Modal --------------------
+    const roomModal = document.getElementById('roomModal');
+    const roomBackdrop = document.getElementById('roomModalBackdrop');
+    const closeRoomModalBtn = document.getElementById('closeRoomModalBtn');
+    const cancelRoomBtn = document.getElementById('cancelRoomBtn');
+    const roomForm = document.getElementById('roomForm');
+    const roomErrBox = document.getElementById('roomFormError');
+
+    const roomBuildingSelect = document.getElementById('roomBuilding');
+    const roomNoBuildingsHint = document.getElementById('roomNoBuildingsHint');
+    const roomFloorInput = document.getElementById('roomFloor');
+    const roomNumberInput = document.getElementById('roomNumber');
+
+    function renderRoomBuildingsSelect() {
+      const hasBuildings = Array.isArray(buildings) && buildings.length > 0;
+      roomNoBuildingsHint.classList.toggle('hidden', hasBuildings);
+
+      roomBuildingSelect.innerHTML = (hasBuildings ? buildings : []).map(b => `
+        <option value="${b.id}">${escapeHtml(b.name ?? '')}</option>
+      `).join('');
+
+      roomBuildingSelect.disabled = !hasBuildings;
+    }
+
+    function openRoomModal() {
+      roomErrBox.classList.add('hidden');
+      roomErrBox.textContent = '';
+
+      renderRoomBuildingsSelect();
+
+      roomFloorInput.value = '1';
+      roomNumberInput.value = '101';
+
+      roomModal.classList.remove('hidden');
+      roomModal.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => {
+        if (!roomBuildingSelect.disabled) roomBuildingSelect.focus();
+        else roomFloorInput.focus();
+      }, 0);
+
+      lucide.createIcons();
+    }
+
+    function closeRoomModal() {
+      roomModal.classList.add('hidden');
+      roomModal.setAttribute('aria-hidden', 'true');
+      roomErrBox.classList.add('hidden');
+      roomErrBox.textContent = '';
+    }
+
+    document.getElementById('addRoomBtn').addEventListener('click', openRoomModal);
+    roomBackdrop.addEventListener('click', closeRoomModal);
+    closeRoomModalBtn.addEventListener('click', closeRoomModal);
+    cancelRoomBtn.addEventListener('click', closeRoomModal);
+
+    function showRoomFormError(msg) {
+      roomErrBox.textContent = msg;
+      roomErrBox.classList.remove('hidden');
+    }
+
+    roomForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      roomErrBox.classList.add('hidden');
+      roomErrBox.textContent = '';
+
+      if (roomBuildingSelect.disabled) return showRoomFormError('אין בניינים. קודם הוסף בניין.');
+
+      const building_id = parseInt(roomBuildingSelect.value, 10);
+      const floor = parseInt(roomFloorInput.value, 10);
+      const class_number = parseInt(roomNumberInput.value, 10);
+
+      if (!Number.isInteger(building_id) || building_id < 1)
+        return showRoomFormError('בחר בניין תקין');
+
+      if (!Number.isInteger(floor))
+        return showRoomFormError('קומה חייבת להיות מספר שלם');
+
+      if (!Number.isInteger(class_number) || class_number < 1)
+        return showRoomFormError('מספר כיתה חייב להיות מספר שלם >= 1');
+
+      try {
+        const response = await fetch('dashboardadmin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            method: 'createNewRoom',
+            params: {
+              building_id: building_id,
+              floor: floor,
+              class_number: class_number
+            }
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+
+        if (!result.flag) return showRoomFormError('השרת סירב ליצור את הכיתה');
+
+        // server-approved room:
+        // server returns: { flag: true, id: <new_id> }
+        rooms.push({
+          id: result.id,
+          id_building: building_id,
+          floor: floor,
+          class_number: class_number
+        });
+
+        renderRoomsTable();
+        closeRoomModal();
+
+      } catch (err) {
+        console.error(err);
+        showRoomFormError('שגיאת תקשורת עם השרת');
+      }
+    });
+
+    // -------------------- Global keys --------------------
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (!buildingModal.classList.contains('hidden')) closeBuildingModal();
+        if (!roomModal.classList.contains('hidden')) closeRoomModal();
+      }
+    });
+
+    // -------------------- Init --------------------
+    renderBuildingsTable();
     renderRoomsTable();
-    renderSchedule();
-    renderSensorsTable();
     setActiveTab('rooms');
     lucide.createIcons();
   </script>
+
 </body>
 </html>

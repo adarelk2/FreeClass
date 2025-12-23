@@ -5,6 +5,7 @@ from models.class_rooms_model import ClassRoomsModel
 from models.classroom_motion_events_model import ClassroomMotionEventsModel
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
+from services.dashboard_service import DashboardService
 
 import jwt
 
@@ -12,7 +13,17 @@ import jwt
 # app/controllers/home_controller.py
 class DashboardadminController(ControllerBase):
     def print(self, params):
-        return self.responseHTML({"page": "home"}, "admin-dashboard")
+        service = DashboardService()
+
+        rooms_model = ClassRoomsModel(db)
+        rooms = rooms_model.filter()
+        print(rooms)
+        buildings = service.getHomeBuildingsCards()
+        context = {
+            "buildings_server": buildings,
+            "rooms_server": rooms
+        }
+        return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
         sensor_model = SensorsModel(db)
