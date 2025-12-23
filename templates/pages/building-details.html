@@ -33,7 +33,7 @@
       <div class="h-32 bg-gradient-to-br from-sky-500 to-blue-600 relative">
         <div class="absolute inset-0 bg-black/10"></div>
         <div class="absolute bottom-4 right-6 text-white">
-          <h2 id="heroName" class="text-2xl font-bold">בניין הנדסה</h2>
+          <h2 id="heroName" class="text-2xl font-bold">{{building.building_name}}</h2>
           <p id="heroDesc" class="text-sky-100">תיאור</p>
         </div>
       </div>
@@ -88,13 +88,7 @@
     // -----------------------------
     // Data (same as React)
     // -----------------------------
-    const building = {
-      id: 1,
-      name: 'בניין הנדסה',
-      description: 'הבניין הראשי של הפקולטה להנדסה',
-      floors: 4,
-      openHours: '07:00 - 23:00',
-    };
+    const building = {{ building | tojson }};
 
     const floors = [
       {
@@ -168,12 +162,12 @@
     const selectedFloorLabel = document.getElementById('selectedFloorLabel');
 
     const spacesList = document.getElementById('spacesList');
-
+    console.log(building)
     // -----------------------------
     // Init header / hero
     // -----------------------------
-    buildingTitle.textContent = building.name;
-    heroName.textContent = building.name;
+    buildingTitle.textContent = building.building_name;
+    heroName.textContent = building.building_name;
     heroDesc.textContent = building.description;
     openHoursText.textContent = `שעות פתיחה: ${building.openHours}`;
 
