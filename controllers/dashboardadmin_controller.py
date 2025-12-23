@@ -12,7 +12,12 @@ import jwt
 # app/controllers/home_controller.py
 class DashboardadminController(ControllerBase):
     def print(self, params):
-        return self.responseHTML({"page": "home"}, "admin-dashboard")
+        buildings_model = BuildingModel(db)
+        context = {
+            "buildings_server": buildings_model.filter()
+        }
+        print(context)
+        return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
         sensor_model = SensorsModel(db)
