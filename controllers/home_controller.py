@@ -9,7 +9,7 @@ class HomeController(ControllerBase):
 
         buildings = service.getHomeBuildingsCards()
         recent_spaces = service.getHomeRecentSpaces(limit=10)
-        available_now = service.getHomeAvailableNow(limit=3)
+        available_now = service.getHomeAvailableNow(limit=6)
         
         context = {
             "page": "home",
