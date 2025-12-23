@@ -4,6 +4,9 @@ from models.building_model import BuildingModel
 from models.class_rooms_model import ClassRoomsModel
 from models.classroom_motion_events_model import ClassroomMotionEventsModel
 from core.controller_base import ControllerBase
+from core.config import (SECRET_JWT_KEY)
+
+import jwt
 
 
 # app/controllers/home_controller.py
@@ -67,3 +70,24 @@ class DashboardadminController(ControllerBase):
             return {"json": {"flag":True, "id":id}}
 
         return {"json": {"flag":False}}
+
+    def authToken(self, params):
+        context = {}
+        flag = False
+
+        try:
+            token = jwt.decode(
+                params["token"],
+                SECRET_JWT_KEY,
+                algorithms=["HS256"]
+            )
+
+            flag = True
+
+        except jwt.ExpiredSignatureError:
+            context["error"] = "Token expired"
+
+        except jwt.InvalidTokenError:
+            context["error"] = "Invalid token"
+
+        return self.responseJSON(context, flag)

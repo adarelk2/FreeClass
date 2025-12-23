@@ -16,6 +16,9 @@ MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 
 
+SECRET_JWT_KEY = os.getenv("SECRET_JWT_KEY")
+
+
 ENV_MODE = os.getenv("ENV_MODE")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
 MYSQL_SSL_REQUIRED = os.getenv("MYSQL_SSL_REQUIRED", "true").lower() == "true"
