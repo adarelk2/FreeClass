@@ -17,7 +17,6 @@ class DashboardadminController(ControllerBase):
 
         rooms_model = ClassRoomsModel(db)
         rooms = rooms_model.filter()
-        print(rooms)
         buildings = service.getHomeBuildingsCards()
         context = {
             "buildings_server": buildings,

@@ -9,7 +9,6 @@ class Building_detailsController(ControllerBase):
 
         service = DashboardService()
         building_by_service = service.getBuildingWithRoomsById(id)
-        print(building_by_service)
 
         context = {"building": building_by_service}
         return self.responseHTML(context, "building-details")
