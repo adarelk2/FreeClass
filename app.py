@@ -1,9 +1,11 @@
 from flask import Flask, request
 from core.application import Application
-from core.config import (SERVER_PORT)
+from core.config import SERVER_PORT
+
 app = Flask(__name__)
 application = Application()
 
+@app.route("/", defaults={"controller": "home"}, methods=["GET", "POST"])
 @app.route("/<controller>", methods=["GET", "POST"])
 def dispatch(controller):
     return application.handle(request, controller)
