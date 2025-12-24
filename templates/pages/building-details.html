@@ -5,268 +5,207 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>פרטי בניין</title>
 
-  <!-- Tailwind CDN -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Lucide Icons CDN -->
+  <!-- Lucide -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50">
 
-  <!-- Header -->
-  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-      <div class="flex items-center gap-3">
-        <a href="dashboard.html" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
-          <i data-lucide="arrow-right" class="w-5 h-5 text-slate-700"></i>
-        </a>
-        <h1 id="buildingTitle" class="text-xl font-bold text-slate-800">בניין</h1>
+<!-- Header -->
+<header class="bg-white border-b sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+    <a href="dashboard.html"
+       class="w-10 h-10 rounded-md hover:bg-slate-100 flex items-center justify-center">
+      <i data-lucide="arrow-right"></i>
+    </a>
+    <h1 id="buildingTitle" class="text-xl font-bold"></h1>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Hero -->
+  <section class="bg-white rounded-xl shadow overflow-hidden">
+    <div id="heroBg" class="h-32 relative">
+      <div class="absolute inset-0 bg-black/10"></div>
+      <div class="absolute bottom-4 right-6 text-white">
+        <h2 id="heroName" class="text-2xl font-bold"></h2>
       </div>
     </div>
-  </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-    <!-- Building hero card -->
-    <section class="bg-white rounded-xl shadow-sm overflow-hidden">
-      <div class="h-32 bg-gradient-to-br from-sky-500 to-blue-600 relative">
-        <div class="absolute inset-0 bg-black/10"></div>
-        <div class="absolute bottom-4 right-6 text-white">
-          <h2 id="heroName" class="text-2xl font-bold">{{building.building_name}}</h2>
-          <p id="heroDesc" class="text-sky-100">תיאור</p>
-        </div>
+    <div class="p-6 flex justify-between flex-wrap gap-3">
+      <div class="text-slate-600">
+        סה״כ קומות: <span id="floorsCount"></span>
       </div>
-
-      <div class="p-6">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-          <div id="openHoursText" class="text-slate-600">שעות פתיחה: --</div>
-          <div class="text-2xl font-bold text-sky-600">
-            <span id="totalAvailable">0</span> כיתות פנויות
-          </div>
-        </div>
+      <div class="text-2xl font-bold text-sky-600">
+        <span id="totalAvailable">0</span> כיתות פנויות
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Floor selector -->
-    <section class="bg-white rounded-xl shadow-sm">
-      <div class="px-6 pt-6 pb-2">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="text-lg font-semibold flex items-center gap-2 text-slate-800">
-            <i data-lucide="layers" class="w-5 h-5 text-sky-600"></i>
-            בחר קומה
-          </h3>
-          <div class="text-sm text-slate-500">
-            <span id="availableCount">0</span> מתוך <span id="totalOnFloor">0</span> פנויות
-          </div>
-        </div>
+  <!-- Floor selector -->
+  <section class="bg-white rounded-xl shadow">
+    <div class="px-6 pt-6 flex justify-between">
+      <h3 class="text-lg font-semibold">בחר קומה</h3>
+      <div class="text-sm text-slate-500">
+        <span id="availableCount">0</span> /
+        <span id="totalOnFloor">0</span> פנויות
       </div>
+    </div>
 
-      <div class="px-6 pb-6">
-        <div id="floorButtons" class="flex gap-2 overflow-x-auto pb-2">
-          <!-- injected by JS -->
-        </div>
-      </div>
-    </section>
+    <div id="floorButtons" class="px-6 py-4 flex gap-2 overflow-x-auto"></div>
+  </section>
 
-    <!-- Spaces list -->
-    <section class="bg-white rounded-xl shadow-sm">
-      <div class="px-6 pt-6 pb-2">
-        <h3 class="text-lg font-semibold text-slate-800">
-          כיתות בקומה <span id="selectedFloorLabel">1</span>
-        </h3>
-      </div>
+  <!-- Rooms -->
+  <section class="bg-white rounded-xl shadow">
+    <div class="px-6 pt-6">
+      <h3 class="text-lg font-semibold">
+        כיתות בקומה <span id="selectedFloorLabel"></span>
+      </h3>
+    </div>
 
-      <div id="spacesList" class="px-6 pb-6 space-y-3">
-        <!-- injected by JS -->
-      </div>
-    </section>
+    <div id="spacesList" class="px-6 pb-6 space-y-3"></div>
+  </section>
 
-  </main>
+</main>
 
-  <script>
-    // -----------------------------
-    // Data (same as React)
-    // -----------------------------
-    const building = {{ building | tojson }};
+<script>
+  // =============================
+  // BACKEND DATA
+  // =============================
+  const building = {{ building | tojson }};
 
-    const floors = [
-      {
-        number: 1,
-        name: 'קומת כניסה',
-        spaces: [
-          { id: 1, name: 'כיתה 101', type: 'classroom', status: 'available' },
-          { id: 2, name: 'כיתה 102', type: 'classroom', status: 'busy' },
-          { id: 3, name: 'מעבדת מחשבים 1', type: 'lab', status: 'busy' },
-          { id: 4, name: 'כיתה 104', type: 'classroom', status: 'available' },
-        ]
-      },
-      {
-        number: 2,
-        name: 'קומה 2',
-        spaces: [
-          { id: 5, name: 'כיתה 201', type: 'classroom', status: 'available' },
-          { id: 6, name: 'כיתה 202', type: 'classroom', status: 'busy' },
-          { id: 7, name: 'כיתה 203', type: 'classroom', status: 'available' },
-          { id: 8, name: 'כיתה 204', type: 'classroom', status: 'available' },
-          { id: 9, name: 'חדר ישיבות', type: 'meeting', status: 'available' },
-        ]
-      },
-      {
-        number: 3,
-        name: 'קומה 3',
-        spaces: [
-          { id: 10, name: 'מעבדת אלקטרוניקה', type: 'lab', status: 'available' },
-          { id: 11, name: 'כיתה 301', type: 'classroom', status: 'busy' },
-          { id: 12, name: 'כיתה 302', type: 'classroom', status: 'available' },
-        ]
-      },
-      {
-        number: 4,
-        name: 'קומה 4',
-        spaces: [
-          { id: 13, name: 'חדר סמינרים', type: 'seminar', status: 'available' },
-          { id: 14, name: 'כיתה 401', type: 'classroom', status: 'available' },
-        ]
-      },
-    ];
+  // =============================
+  // NORMALIZE ROOMS -> FLOORS
+  // =============================
+  const floorsMap = {};
 
-    const typeLabels = {
-      classroom: 'כיתה',
-      lab: 'מעבדה',
-      meeting: 'חדר ישיבות',
-      seminar: 'חדר סמינרים',
-    };
-
-    function getTypeLabel(type) {
-      return typeLabels[type] || type;
+  building.rooms.forEach(room => {
+    if (!floorsMap[room.floor]) {
+      floorsMap[room.floor] = [];
     }
 
-    // -----------------------------
-    // State
-    // -----------------------------
-    let selectedFloor = 1;
-
-    // -----------------------------
-    // Elements
-    // -----------------------------
-    const buildingTitle = document.getElementById('buildingTitle');
-    const heroName = document.getElementById('heroName');
-    const heroDesc = document.getElementById('heroDesc');
-    const openHoursText = document.getElementById('openHoursText');
-    const totalAvailableEl = document.getElementById('totalAvailable');
-
-    const floorButtons = document.getElementById('floorButtons');
-    const availableCountEl = document.getElementById('availableCount');
-    const totalOnFloorEl = document.getElementById('totalOnFloor');
-    const selectedFloorLabel = document.getElementById('selectedFloorLabel');
-
-    const spacesList = document.getElementById('spacesList');
-    console.log(building)
-    // -----------------------------
-    // Init header / hero
-    // -----------------------------
-    buildingTitle.textContent = building.building_name;
-    heroName.textContent = building.building_name;
-    heroDesc.textContent = building.description;
-    openHoursText.textContent = `שעות פתיחה: ${building.openHours}`;
-
-    const totalAvailable = floors.reduce((acc, floor) =>
-      acc + floor.spaces.filter(s => s.status === 'available').length
-    , 0);
-    totalAvailableEl.textContent = totalAvailable;
-
-    // -----------------------------
-    // Render floor buttons
-    // -----------------------------
-    function renderFloorButtons() {
-      floorButtons.innerHTML = floors.map(f => {
-        const floorAvailable = f.spaces.filter(s => s.status === 'available').length;
-        const isSelected = selectedFloor === f.number;
-
-        return `
-          <button
-            data-floor="${f.number}"
-            class="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2 rounded-md border transition
-              ${isSelected ? 'bg-sky-600 text-white border-sky-600' : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'}"
-          >
-            <div class="font-medium">${f.name}</div>
-            <small class="${isSelected ? 'opacity-80' : 'text-slate-500'}">${floorAvailable} פנויות</small>
-          </button>
-        `;
-      }).join('');
-
-      lucide.createIcons();
-    }
-
-    // -----------------------------
-    // Render spaces list
-    // -----------------------------
-    function renderSpaces() {
-      const currentFloor = floors.find(f => f.number === selectedFloor);
-      selectedFloorLabel.textContent = selectedFloor;
-
-      const availableCount = currentFloor ? currentFloor.spaces.filter(s => s.status === 'available').length : 0;
-      const totalOnFloor = currentFloor ? currentFloor.spaces.length : 0;
-
-      availableCountEl.textContent = availableCount;
-      totalOnFloorEl.textContent = totalOnFloor;
-
-      spacesList.innerHTML = (currentFloor?.spaces || []).map(space => {
-        const isAvailable = space.status === 'available';
-
-        const wrapperClasses = isAvailable
-          ? 'bg-emerald-50 hover:bg-emerald-100 border-r-emerald-500'
-          : 'bg-red-50 hover:bg-red-100 border-r-red-500';
-
-        const iconName = isAvailable ? 'check-circle-2' : 'x-circle';
-        const iconColor = isAvailable ? 'text-emerald-600' : 'text-red-600';
-
-        return `
-          <a href="space-details.html?id=${space.id}" class="block">
-            <div class="flex items-center justify-between p-4 rounded-xl transition-all cursor-pointer border-r-4 ${wrapperClasses}">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center">
-                  <i data-lucide="${iconName}" class="w-6 h-6 ${iconColor}"></i>
-                </div>
-                <div>
-                  <p class="font-semibold text-slate-800 text-lg">${space.name}</p>
-                  <p class="text-sm text-slate-500">${getTypeLabel(space.type)}</p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <span class="font-bold ${isAvailable ? 'text-emerald-700' : 'text-red-700'}">
-                  ${isAvailable ? 'פנוי' : 'תפוס'}
-                </span>
-                <i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i>
-              </div>
-            </div>
-          </a>
-        `;
-      }).join('');
-
-      lucide.createIcons();
-    }
-
-    // -----------------------------
-    // Events
-    // -----------------------------
-    floorButtons.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-floor]');
-      if (!btn) return;
-
-      selectedFloor = parseInt(btn.getAttribute('data-floor'), 10);
-      renderFloorButtons();
-      renderSpaces();
+    floorsMap[room.floor].push({
+      id: room.id,
+      name: `כיתה ${room.class_number}`,
+      isAvailable: room.is_available === true
     });
+  });
 
-    // -----------------------------
-    // Boot
-    // -----------------------------
-    renderFloorButtons();
-    renderSpaces();
+  const floors = Object.keys(floorsMap)
+    .map(n => ({
+      number: Number(n),
+      rooms: floorsMap[n]
+    }))
+    .sort((a, b) => a.number - b.number);
+
+  // =============================
+  // STATE
+  // =============================
+  let selectedFloor = floors[0]?.number || 1;
+
+  // =============================
+  // ELEMENTS
+  // =============================
+  const buildingTitle = document.getElementById('buildingTitle');
+  const heroName = document.getElementById('heroName');
+  const heroBg = document.getElementById('heroBg');
+  const floorsCount = document.getElementById('floorsCount');
+  const totalAvailableEl = document.getElementById('totalAvailable');
+
+  const floorButtons = document.getElementById('floorButtons');
+  const availableCountEl = document.getElementById('availableCount');
+  const totalOnFloorEl = document.getElementById('totalOnFloor');
+  const selectedFloorLabel = document.getElementById('selectedFloorLabel');
+  const spacesList = document.getElementById('spacesList');
+
+  // =============================
+  // HEADER INIT
+  // =============================
+  buildingTitle.textContent = building.building_name;
+  heroName.textContent = building.building_name;
+  floorsCount.textContent = building.floors;
+  heroBg.style.background = building.color || '#1D5875';
+
+  const totalAvailable =
+    building.rooms.filter(r => r.is_available === true).length;
+  totalAvailableEl.textContent = totalAvailable;
+
+  // =============================
+  // FLOOR BUTTONS
+  // =============================
+  function renderFloorButtons() {
+    floorButtons.innerHTML = floors.map(f => {
+      const available = f.rooms.filter(r => r.isAvailable).length;
+      const active = f.number === selectedFloor;
+
+      return `
+        <button data-floor="${f.number}"
+          class="px-4 py-2 rounded-md border text-sm transition
+          ${active ? 'bg-sky-600 text-white border-sky-600'
+                   : 'bg-white border-slate-200 hover:bg-slate-50'}">
+          קומה ${f.number}
+          <div class="text-xs opacity-80">${available} פנויות</div>
+        </button>
+      `;
+    }).join('');
+
     lucide.createIcons();
-  </script>
+  }
+
+  // =============================
+  // ROOMS LIST
+  // =============================
+  function renderRooms() {
+    const floor = floors.find(f => f.number === selectedFloor);
+    if (!floor) return;
+
+    selectedFloorLabel.textContent = selectedFloor;
+    totalOnFloorEl.textContent = floor.rooms.length;
+
+    const available = floor.rooms.filter(r => r.isAvailable).length;
+    availableCountEl.textContent = available;
+
+    spacesList.innerHTML = floor.rooms.map(r => `
+      <div class="flex justify-between items-center p-4 rounded-xl border-r-4
+        ${r.isAvailable ? 'bg-emerald-50 border-emerald-500'
+                        : 'bg-red-50 border-red-500'}">
+        <div class="flex items-center gap-3">
+          <i data-lucide="${r.isAvailable ? 'check-circle' : 'x-circle'}"
+             class="${r.isAvailable ? 'text-emerald-600' : 'text-red-600'}"></i>
+          <span class="font-semibold">${r.name}</span>
+        </div>
+        <span class="font-bold
+          ${r.isAvailable ? 'text-emerald-700' : 'text-red-700'}">
+          ${r.isAvailable ? 'פנוי' : 'תפוס'}
+        </span>
+      </div>
+    `).join('');
+
+    lucide.createIcons();
+  }
+
+  // =============================
+  // EVENTS
+  // =============================
+  floorButtons.addEventListener('click', e => {
+    const btn = e.target.closest('[data-floor]');
+    if (!btn) return;
+    selectedFloor = Number(btn.dataset.floor);
+    renderFloorButtons();
+    renderRooms();
+  });
+
+  // =============================
+  // BOOT
+  // =============================
+  renderFloorButtons();
+  renderRooms();
+  lucide.createIcons();
+</script>
+
 </body>
 </html>
