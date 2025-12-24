@@ -134,7 +134,7 @@
       const grid = document.getElementById('buildingsGrid');
 
       grid.innerHTML = buildings.map(b => `
-        <a href="#building?id=${b.id}" class="block">
+        <a href="building_details?id=${b.id}" class="block">
           <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
             <div class="p-5">
               <div class="flex items-start justify-between mb-4">
