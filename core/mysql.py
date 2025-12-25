@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from typing import Optional, Any, Dict, List, Tuple
-
 import re
 import mysql.connector
 from mysql.connector import MySQLConnection
@@ -13,6 +12,7 @@ class MySQL:
     Minimal MySQL wrapper with:
     - insert/update/delete
     - select with ADT-style filters + safe-ish order_by + limit/offset
+    - auto reconnect + single retry on transient connection drops
     """
 
     def __init__(
@@ -24,33 +24,105 @@ class MySQL:
         port: int = 3306,
         ssl_required: bool = True,
     ) -> None:
-        self.connection: MySQLConnection = mysql.connector.connect(
+        self._cfg = dict(
             host=host,
             user=user,
             password=password,
             database=database,
             port=port,
-            ssl_disabled=(not ssl_required),
+            ssl_required=ssl_required,
         )
+        self.connection: MySQLConnection = self._connect()
 
-        self.connection.autocommit = True
+    # -----------------------------
+    # CONNECTION
+    # -----------------------------
+
+    def _connect(self) -> MySQLConnection:
+        conn: MySQLConnection = mysql.connector.connect(
+            host=self._cfg["host"],
+            user=self._cfg["user"],
+            password=self._cfg["password"],
+            database=self._cfg["database"],
+            port=self._cfg["port"],
+            ssl_disabled=(not self._cfg["ssl_required"]),
+        )
+        conn.autocommit = True  # you already rely on autocommit behavior
+        return conn
+
+    def ensure_connection(self) -> None:
+        """
+        Make sure connection is alive.
+        mysql-connector supports ping(reconnect=True)
+        """
+        try:
+            if self.connection is None:  # type: ignore[truthy-bool]
+                self.connection = self._connect()
+                return
+            self.connection.ping(reconnect=True, attempts=1, delay=0)
+        except Exception:
+            self.connection = self._connect()
+
+    def _validate_tbname(self, tbname: str) -> None:
+        # prevent SQL injection via table name
+        if not re.fullmatch(r"[A-Za-z0-9_]+", tbname):
+            raise ValueError("table name contains invalid characters")
+
+    def _execute_with_retry(
+        self,
+        query: str,
+        params: Tuple[Any, ...],
+        *,
+        dictionary: bool,
+        fetch: bool,
+        commit: bool,
+    ):
+        """
+        Execute with:
+        - ensure_connection()
+        - retry exactly once if the socket/connection dropped
+        """
+        last_exc: Optional[Exception] = None
+
+        for attempt in (1, 2):
+            try:
+                self.ensure_connection()
+                cursor = self.connection.cursor(dictionary=dictionary)
+                try:
+                    cursor.execute(query, params)
+                    if fetch:
+                        return cursor.fetchall()
+                    if commit:
+                        # In practice autocommit is True, but keep this safe.
+                        self.connection.commit()
+                    return cursor.rowcount, getattr(cursor, "lastrowid", None)
+                finally:
+                    cursor.close()
+            except Exception as exc:
+                last_exc = exc
+                if attempt == 1:
+                    # reconnect and retry once
+                    try:
+                        self.connection = self._connect()
+                    except Exception:
+                        pass
+                    continue
+                raise
+
+        if last_exc:
+            raise last_exc
 
     # ---------------------------------
     # INTERNAL HELPERS
     # ---------------------------------
 
     def _build_where(self, filters: Dict[str, Any]) -> Tuple[str, List[Any]]:
-        """
-        Builds: " WHERE a=%s AND b=%s" and values list
-        Equality AND only.
-        """
         if not filters:
             return "", []
 
         parts: List[str] = []
         values: List[Any] = []
         for k, v in filters.items():
-            # allow only simple identifier chars for column names
             if not str(k).replace("_", "").isalnum():
                 raise ValueError("filter key contains invalid characters")
             parts.append(f"{k}=%s")
@@ -64,19 +136,6 @@ class MySQL:
         limit: Optional[int],
         offset: Optional[int],
     ) -> str:
-        """
-        order_by supports:
-          - "id" => ORDER BY id ASC
-          - "-id" => ORDER BY id DESC
-          - "event_time DESC"
-          - "event_time ASC"
-          - "event_time DESC, id DESC"  (multi-column)
-
-        Notes:
-        - This is still an ADT-friendly interface: caller does NOT pass raw SQL beyond
-          a constrained ORDER BY expression.
-        - We validate identifiers to reduce injection risk.
-        """
         sql_parts: List[str] = []
 
         if order_by:
@@ -85,20 +144,17 @@ class MySQL:
                 raise ValueError("order_by cannot be empty")
 
             order_terms: List[str] = []
-
             for raw_term in ob.split(","):
                 term = raw_term.strip()
                 if not term:
                     continue
 
-                # Support "-col" shorthand
                 if term.startswith("-"):
                     col = term[1:].strip()
                     direction = "DESC"
                     if not col:
                         raise ValueError("order_by contains invalid characters")
                 else:
-                    # Support "col" or "col ASC/DESC"
                     parts = term.split()
                     if len(parts) == 1:
                         col = parts[0]
@@ -111,12 +167,10 @@ class MySQL:
                     else:
                         raise ValueError("order_by format is invalid")
 
-                # allow backticks around identifiers
                 col_clean = col.strip()
                 if col_clean.startswith("`") and col_clean.endswith("`") and len(col_clean) >= 3:
                     col_clean = col_clean[1:-1]
 
-                # strict identifier validation: letters/numbers/underscore only
                 if not re.fullmatch(r"[A-Za-z0-9_]+", col_clean):
                     raise ValueError("order_by contains invalid characters")
 
@@ -133,7 +187,6 @@ class MySQL:
         if offset is not None:
             if offset < 0:
                 raise ValueError("offset must be >= 0")
-            # MySQL requires LIMIT when using OFFSET; enforce it.
             if limit is None:
                 raise ValueError("offset requires limit")
             sql_parts.append(" OFFSET %s")
@@ -153,40 +206,34 @@ class MySQL:
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        filters example (equality AND only):
-        {"id": 5, "name": "adar"}
-
-        order_by:
-          "id" or "-id" or "event_time DESC" or "event_time DESC, id DESC"
-
-        limit/offset optional (offset requires limit).
-        """
+        self._validate_tbname(tbname)
         filters = filters or {}
 
         where_sql, values = self._build_where(filters)
         tail_sql = self._build_order_limit_offset(order_by, limit, offset)
-
         query = f"SELECT * FROM {tbname}{where_sql}{tail_sql}"
 
-        # add limit/offset parameters at the end
         if limit is not None:
             values.append(limit)
         if offset is not None:
             values.append(offset)
 
-        cursor = self.connection.cursor(dictionary=True)
-        try:
-            cursor.execute(query, tuple(values))
-            return cursor.fetchall()
-        finally:
-            cursor.close()
+        rows = self._execute_with_retry(
+            query,
+            tuple(values),
+            dictionary=True,
+            fetch=True,
+            commit=False,
+        )
+        return rows
 
     # ---------------------------------
     # INSERT
     # ---------------------------------
 
     def insert(self, tbname: str, data: Dict[str, Any]) -> Optional[int]:
+        self._validate_tbname(tbname)
+
         if not data:
             raise ValueError("insert() requires data")
 
@@ -197,23 +244,26 @@ class MySQL:
 
         placeholders = ", ".join(["%s"] * len(cols))
         columns_sql = ", ".join(cols)
-        values = [data[c] for c in cols]
+        values = tuple(data[c] for c in cols)
 
         query = f"INSERT INTO {tbname} ({columns_sql}) VALUES ({placeholders})"
 
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query, tuple(values))
-            self.connection.commit()
-            return cursor.lastrowid
-        finally:
-            cursor.close()
+        _, lastrowid = self._execute_with_retry(
+            query,
+            values,
+            dictionary=False,
+            fetch=False,
+            commit=True,
+        )
+        return lastrowid
 
     # ---------------------------------
     # UPDATE
     # ---------------------------------
 
     def update(self, tbname: str, data: Dict[str, Any], where: Dict[str, Any]) -> int:
+        self._validate_tbname(tbname)
+
         if not data:
             raise ValueError("update() requires data")
         if not where:
@@ -232,29 +282,33 @@ class MySQL:
 
         query = f"UPDATE {tbname} SET " + ", ".join(set_parts) + where_sql
 
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query, tuple(values))
-            self.connection.commit()
-            return cursor.rowcount
-        finally:
-            cursor.close()
+        rowcount, _ = self._execute_with_retry(
+            query,
+            tuple(values),
+            dictionary=False,
+            fetch=False,
+            commit=True,
+        )
+        return int(rowcount)
 
     # ---------------------------------
     # DELETE
     # ---------------------------------
 
     def delete(self, tbname: str, where: Dict[str, Any]) -> int:
+        self._validate_tbname(tbname)
+
         if not where:
             raise ValueError("delete() requires where")
 
         where_sql, values = self._build_where(where)
         query = f"DELETE FROM {tbname}{where_sql}"
 
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query, tuple(values))
-            self.connection.commit()
-            return cursor.rowcount
-        finally:
-            cursor.close()
+        rowcount, _ = self._execute_with_retry(
+            query,
+            tuple(values),
+            dictionary=False,
+            fetch=False,
+            commit=True,
+        )
+        return int(rowcount)

@@ -16,30 +16,42 @@
 
   <!-- Header -->
   <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
-            <i data-lucide="map-pin" class="w-5 h-5 text-white"></i>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-slate-800">קמפוס חכם</h1>
-            <p class="text-xs text-slate-500">מצא כיתה פנויה במהירות</p>
-          </div>
-        </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+      <!--
+        Mobile: column (logo top, buttons below)
+        Desktop: row-reverse (logo right, actions left) to fit RTL navbar expectations
+      -->
+      <div class="flex flex-col sm:flex-row-reverse sm:items-center sm:justify-between gap-3">
 
-        <div class="flex items-center gap-2">
-          <!-- In React this was <Link> - in HTML we use normal <a> -->
-          <a href="#admin-login" class="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 transition">
+        <!-- Logo -->
+        <a href="/home" class="shrink-0 flex items-center justify-center sm:justify-end">
+        <img
+          src="{{ url_for('static', filename='images/logo3.png') }}"
+          alt="freeclass"
+          class="h-11 sm:h-14 w-auto object-contain"
+          loading="eager"
+        />
+        </a>
+
+        <!-- Actions -->
+        <div class="flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-2">
+          <a
+            href="adminlogin"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 transition text-sm"
+          >
             <i data-lucide="lock" class="w-4 h-4"></i>
-            <span>כניסת מנהלים</span>
+            <span class="whitespace-nowrap">כניסת מנהלים</span>
           </a>
 
-          <a href="#search" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition">
+          <a
+            href="#search"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-md bg-sky-600 text-white hover:bg-sky-700 transition text-sm"
+          >
             <i data-lucide="search" class="w-4 h-4"></i>
-            <span>חיפוש כיתה</span>
+            <span class="whitespace-nowrap">חיפוש כיתה</span>
           </a>
         </div>
+
       </div>
     </div>
   </header>
@@ -108,11 +120,8 @@
   </main>
 
   <script>
-    // Same data as your React component
     const buildings = {{ buildings_server | tojson }};
-
     const recentSpaces = {{ recentSpaces_server | tojson }};
-
     const availableNow = {{ available_now_server | tojson }};
     
     function statusIcon(status) {
@@ -134,7 +143,7 @@
       const grid = document.getElementById('buildingsGrid');
 
       grid.innerHTML = buildings.map(b => `
-        <a href="#building?id=${b.id}" class="block">
+        <a href="building_details?id=${b.id}" class="block">
           <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group">
             <div class="p-5">
               <div class="flex items-start justify-between mb-4">
@@ -143,7 +152,6 @@
                     ${b.name}
                   </h3>
                 </div>
-
               </div>
 
               <div class="space-y-2">
@@ -201,7 +209,6 @@
     }
 
     function renderHeroNumbers() {
-      // Optional: compute "available now" across campus from buildings
       const totalRooms = buildings.reduce((sum, b) => sum + b.totalRooms, 0);
       const totalAvailable = buildings.reduce((sum, b) => sum + b.availableRooms, 0);
 
@@ -209,13 +216,10 @@
       document.getElementById('heroTotalCampus').textContent = totalRooms;
     }
 
-    // Render all
     renderHeroNumbers();
     renderBuildings();
     renderRecent();
     renderAvailableNow();
-
-    // Activate icons
     lucide.createIcons();
   </script>
 </body>

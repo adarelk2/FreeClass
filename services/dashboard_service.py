@@ -27,8 +27,7 @@ class DashboardService:
         self.building_model = building_model or BuildingModel(self.db)
         self.classrooms_model = classrooms_model or ClassRoomsModel(self.db)
 
-        # ✅ RoomsService בלי ארגומנטים – תואם ADT
-        self.rooms_service = rooms_service or RoomsService()
+        self.rooms_service = rooms_service or RoomsService(self.db)
 
     # ---- ADT: public API (keep names) ----
 
@@ -47,19 +46,45 @@ class DashboardService:
           }
         ]
         """
-        buildings = self.building_model.filter()
-        rooms = self.classrooms_model.filter()
+        buildings = self.building_model.filter()     # all buildings
+        rooms = self.classrooms_model.filter()       # all rooms
 
-        available_ids = self._get_available_ids(include_availability)
-        rooms_by_building = self._index_rooms_by_building(rooms)
+        available_ids = set()
+        if include_availability:
+            available_ids = self.rooms_service.getAvailableRoomIds()
 
-        result: List[Dict[str, Any]] = []
+        rooms_by_building: Dict[int, List[Dict[str, Any]]] = {}
+        for room in rooms:
+            b_id = room.get("id_building")
+            if b_id is None:
+                continue
+            try:
+                b_id_int = int(b_id)
+            except Exception:
+                continue
+            rooms_by_building.setdefault(b_id_int, []).append(room)
+
+        result = []
         for b in buildings:
-            b_id_int = self._safe_int(b.get("id"))
-            building_rooms = rooms_by_building.get(b_id_int, []) if b_id_int is not None else []
+            b_id = b.get("id")
 
             b_copy = dict(b)
-            b_copy["rooms"] = self._enrich_rooms(building_rooms, available_ids, include_availability)
+            enriched_rooms: List[Dict[str, Any]] = []
+
+            if b_id is not None:
+                try:
+                    b_id_int = int(b_id)
+                except Exception:
+                    b_id_int = None
+
+                building_rooms = rooms_by_building.get(b_id_int, []) if b_id_int is not None else []
+                for r in building_rooms:
+                    r_copy = dict(r)
+                    if include_availability:
+                        r_copy["is_available"] = (r_copy.get("id") in available_ids)
+                    enriched_rooms.append(r_copy)
+
+            b_copy["rooms"] = enriched_rooms
             result.append(b_copy)
 
         return result
@@ -78,27 +103,56 @@ class DashboardService:
 
         Notes:
         - Uses filter() and in-memory filtering to avoid changing Model ADT.
+        - If you add BuildingModel.getById / findOne later, we can optimize without changing this ADT.
         """
-        building_id_int = self._safe_int(building_id)
-        if building_id_int is None:
+        try:
+            building_id_int = int(building_id)
+        except Exception:
             return None
 
-        # Find the building
-        building = self._find_building_by_id(building_id_int)
+        # bring buildings and find the requested one
+        buildings = self.building_model.filter()
+        building: Optional[Dict[str, Any]] = None
+        for b in buildings:
+            bid = b.get("id")
+            if bid is None:
+                continue
+            try:
+                if int(bid) == building_id_int:
+                    building = b
+                    break
+            except Exception:
+                continue
+
         if building is None:
             return None
 
-        # Collect only rooms for this building (single pass)
+        # get rooms for this building
         rooms = self.classrooms_model.filter()
         building_rooms: List[Dict[str, Any]] = []
         for r in rooms:
-            if self._safe_int(r.get("id_building")) == building_id_int:
-                building_rooms.append(r)
+            b_id = r.get("id_building")
+            if b_id is None:
+                continue
+            try:
+                if int(b_id) == building_id_int:
+                    building_rooms.append(r)
+            except Exception:
+                continue
 
-        available_ids = self._get_available_ids(include_availability)
+        available_ids = set()
+        if include_availability:
+            available_ids = self.rooms_service.getAvailableRoomIds()
+
+        enriched_rooms: List[Dict[str, Any]] = []
+        for r in building_rooms:
+            r_copy = dict(r)
+            if include_availability:
+                r_copy["is_available"] = (r_copy.get("id") in available_ids)
+            enriched_rooms.append(r_copy)
 
         b_copy = dict(building)
-        b_copy["rooms"] = self._enrich_rooms(building_rooms, available_ids, include_availability)
+        b_copy["rooms"] = enriched_rooms
         return b_copy
 
     # ----------------------------
@@ -114,7 +168,10 @@ class DashboardService:
             rooms = b.get("rooms", []) or []
 
             total_rooms = len(rooms)
-            available_rooms = sum(1 for r in rooms if r.get("is_available") is True)
+            available_rooms = 0
+            for r in rooms:
+                if r.get("is_available") is True:
+                    available_rooms += 1
 
             color = b.get("color") or "#000"
 
@@ -130,19 +187,61 @@ class DashboardService:
         return cards
 
     def getHomeRecentSpaces(self, limit: int = 4):
-        """
-        Returns list for recentSpaces_server:
-        [
-          { id, name, building, status }
-        ]
-
-        "recent" is based on the latest rows in classroom_motion_events (event_time DESC),
-        deduped by classroom_id.
-        """
         try:
             from models.classroom_motion_events_model import ClassroomMotionEventsModel
         except Exception:
-            return self._fallback_recent_spaces(limit)
+            rooms = self.classrooms_model.filter()
+            buildings = self.building_model.filter()
+
+            buildings_by_id = {}
+            for b in buildings:
+                bid = b.get("id")
+                if bid is None:
+                    continue
+                try:
+                    buildings_by_id[int(bid)] = b
+                except Exception:
+                    continue
+
+            available_ids = self.rooms_service.getAvailableRoomIds()
+            items = []
+            for r in rooms:
+                rid = r.get("id")
+                if rid is None:
+                    continue
+                try:
+                    rid_int = int(rid)
+                except Exception:
+                    continue
+
+                b_id = r.get("id_building")
+                b_name = "Unknown"
+                if b_id is not None:
+                    try:
+                        b_name = (buildings_by_id.get(int(b_id), {}) or {}).get("building_name") \
+                                 or (buildings_by_id.get(int(b_id), {}) or {}).get("name") \
+                                 or "Unknown"
+                    except Exception:
+                        pass
+
+                class_number = r.get("class_number") or r.get("number") or rid_int
+                status = "available" if (rid_int in available_ids) else "busy"
+
+                items.append({
+                    "id": rid_int,
+                    "name": f"כיתה {class_number}",
+                    "building": b_name,
+                    "status": status,
+                })
+
+            def _id_as_int(x):
+                try:
+                    return int(x.get("id") or 0)
+                except Exception:
+                    return 0
+
+            items.sort(key=_id_as_int, reverse=True)
+            return items[:max(0, int(limit))]
 
         limit_int = max(0, int(limit))
         batch_limit = max(20, limit_int * 10)
@@ -153,19 +252,45 @@ class DashboardService:
         rooms = self.classrooms_model.filter()
         buildings = self.building_model.filter()
 
-        rooms_by_id = self._index_by_int_id(rooms)
-        buildings_by_id = self._index_by_int_id(buildings)
+        rooms_by_id: Dict[int, Dict[str, Any]] = {}
+        for r in rooms:
+            rid = r.get("id")
+            if rid is None:
+                continue
+            try:
+                rooms_by_id[int(rid)] = r
+            except Exception:
+                continue
+
+        buildings_by_id: Dict[int, Dict[str, Any]] = {}
+        for b in buildings:
+            bid = b.get("id")
+            if bid is None:
+                continue
+            try:
+                buildings_by_id[int(bid)] = b
+            except Exception:
+                continue
 
         available_ids = self.rooms_service.getAvailableRoomIds()
-        available_ids_int = {self._safe_int(x) for x in available_ids}
-        available_ids_int.discard(None)
+        available_ids_int = set()
+        for x in available_ids:
+            try:
+                available_ids_int.add(int(x))
+            except Exception:
+                pass
 
         seen_classroom_ids = set()
-        items: List[Dict[str, Any]] = []
+        items = []
 
         for e in events:
-            classroom_id_int = self._safe_int(e.get("classroom_id"))
-            if classroom_id_int is None:
+            classroom_id = e.get("classroom_id")
+            if classroom_id is None:
+                continue
+
+            try:
+                classroom_id_int = int(classroom_id)
+            except Exception:
                 continue
 
             if classroom_id_int in seen_classroom_ids:
@@ -173,7 +298,15 @@ class DashboardService:
             seen_classroom_ids.add(classroom_id_int)
 
             room = rooms_by_id.get(classroom_id_int, {}) or {}
-            building_name = self._resolve_building_name(room, buildings_by_id)
+            building_name = "Unknown"
+            b_id = room.get("id_building")
+
+            if b_id is not None:
+                try:
+                    b = buildings_by_id.get(int(b_id), {}) or {}
+                    building_name = b.get("building_name") or b.get("name") or "Unknown"
+                except Exception:
+                    pass
 
             class_number = room.get("class_number") or room.get("number") or room.get("id")
             status = "available" if (classroom_id_int in available_ids_int) else "busy"
@@ -193,7 +326,7 @@ class DashboardService:
     def getHomeAvailableNow(self, limit: int = 3):
         buildings = self.getBuildingsWithRooms(include_availability=True)
 
-        available: List[Dict[str, Any]] = []
+        available = []
         for b in buildings:
             b_name = b.get("building_name") or b.get("name") or "Unknown"
             rooms = b.get("rooms", []) or []
@@ -203,7 +336,12 @@ class DashboardService:
                     continue
 
                 class_number = r.get("class_number") or r.get("number") or r.get("id")
-                floor_int = self._safe_int(r.get("floor")) or 0
+                floor = r.get("floor")
+
+                try:
+                    floor_int = int(floor) if floor is not None else 0
+                except Exception:
+                    floor_int = 0
 
                 available.append({
                     "name": f"כיתה {class_number}",
@@ -213,90 +351,3 @@ class DashboardService:
 
         available.sort(key=lambda x: (x.get("floor", 0), str(x.get("name", ""))))
         return available[:max(0, int(limit))]
-
-    # ----------------------------
-    # Internals (private helpers) - does not change ADT
-    # ----------------------------
-
-    def _safe_int(self, value: Any) -> Optional[int]:
-        try:
-            if value is None:
-                return None
-            return int(value)
-        except Exception:
-            return None
-
-    def _get_available_ids(self, include_availability: bool):
-        if not include_availability:
-            return set()
-        return self.rooms_service.getAvailableRoomIds()
-
-    def _enrich_rooms(self, rooms: List[Dict[str, Any]], available_ids: set, include_availability: bool):
-        enriched: List[Dict[str, Any]] = []
-        for r in rooms:
-            r_copy = dict(r)
-            if include_availability:
-                r_copy["is_available"] = (r_copy.get("id") in available_ids)
-            enriched.append(r_copy)
-        return enriched
-
-    def _index_rooms_by_building(self, rooms: List[Dict[str, Any]]):
-        rooms_by_building: Dict[int, List[Dict[str, Any]]] = {}
-        for room in rooms:
-            b_id_int = self._safe_int(room.get("id_building"))
-            if b_id_int is None:
-                continue
-            rooms_by_building.setdefault(b_id_int, []).append(room)
-        return rooms_by_building
-
-    def _find_building_by_id(self, building_id_int: int) -> Optional[Dict[str, Any]]:
-        buildings = self.building_model.filter()
-        for b in buildings:
-            if self._safe_int(b.get("id")) == building_id_int:
-                return b
-        return None
-
-    def _index_by_int_id(self, rows: List[Dict[str, Any]]):
-        by_id: Dict[int, Dict[str, Any]] = {}
-        for row in rows:
-            rid = self._safe_int(row.get("id"))
-            if rid is None:
-                continue
-            by_id[rid] = row
-        return by_id
-
-    def _resolve_building_name(self, room: Dict[str, Any], buildings_by_id: Dict[int, Dict[str, Any]]) -> str:
-        b_id_int = self._safe_int(room.get("id_building"))
-        if b_id_int is None:
-            return "Unknown"
-        b = buildings_by_id.get(b_id_int, {}) or {}
-        return b.get("building_name") or b.get("name") or "Unknown"
-
-    def _fallback_recent_spaces(self, limit: int = 4):
-        rooms = self.classrooms_model.filter()
-        buildings = self.building_model.filter()
-
-        buildings_by_id = self._index_by_int_id(buildings)
-
-        available_ids = self.rooms_service.getAvailableRoomIds()
-        items: List[Dict[str, Any]] = []
-
-        for r in rooms:
-            rid_int = self._safe_int(r.get("id"))
-            if rid_int is None:
-                continue
-
-            building_name = self._resolve_building_name(r, buildings_by_id)
-
-            class_number = r.get("class_number") or r.get("number") or rid_int
-            status = "available" if (rid_int in available_ids) else "busy"
-
-            items.append({
-                "id": rid_int,
-                "name": f"כיתה {class_number}",
-                "building": building_name,
-                "status": status,
-            })
-
-        items.sort(key=lambda x: x.get("id", 0), reverse=True)
-        return items[:max(0, int(limit))]
