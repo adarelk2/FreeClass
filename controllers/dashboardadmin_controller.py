@@ -3,6 +3,7 @@ from models.sensors_model import SensorsModel
 from models.building_model import BuildingModel
 from models.class_rooms_model import ClassRoomsModel
 from models.classroom_motion_events_model import ClassroomMotionEventsModel
+from models.class_room_categories import ClassRoomCategoriesModel
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from services.home_service import HomeService
@@ -16,10 +17,13 @@ class DashboardadminController(ControllerBase):
         service = HomeService()
 
         rooms_model = ClassRoomsModel(db)
+        class_room_categories_model = ClassRoomCategoriesModel(db)
+        categories = class_room_categories_model.filter()
         rooms = rooms_model.filter()
         buildings = service.getHomeBuildingsCards()
         context = {
             "buildings_server": buildings,
+            "classRoom_categories_server" : categories,
             "rooms_server": rooms
         }
         return self.responseHTML(context, "admin-dashboard")
@@ -57,13 +61,15 @@ class DashboardadminController(ControllerBase):
         building_id = params.get("building_id", "")
         floor = params.get("floor", 0)
         class_number = params.get("class_number", 0)
+        category_id = params.get("category_id", 0)
+
         building_model = BuildingModel(db)
 
         building = building_model.get_by_id(building_id)
         if building:
             room_model = ClassRoomsModel(db)
 
-            id = room_model.create({"id_building":building_id, "floor":floor, "class_number": class_number})
+            id = room_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
             return {"json": {"flag":True, "id":id}}
 
         return {"json": {"flag":False}}
