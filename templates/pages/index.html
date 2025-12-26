@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>קמפוס חכם - Dashboard</title>
+  <script src= "{{ url_for('static', filename='js/circleProgress.js') }}"></script>
 
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -64,12 +65,12 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sky-100 text-sm">כיתות פנויות כרגע</p>
-            <p class="text-5xl font-bold mt-2" id="heroAvailableNow">28</p>
-            <p class="text-sky-100 mt-2">מתוך <span id="heroTotalCampus">55</span> כיתות בקמפוס</p>
+            <p class="text-5xl font-bold mt-2" id="heroAvailableNow"></p>
+            <p class="text-sky-100 mt-2">מתוך <span id="heroTotalCampus"></span> כיתות בקמפוס</p>
           </div>
-          <div class="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
-            <i data-lucide="map-pin" class="w-12 h-12"></i>
-          </div>
+          <div id="roomUsage"></div>
+        </script>
+
         </div>
       </div>
     </section>
@@ -214,6 +215,21 @@
 
       document.getElementById('heroAvailableNow').textContent = totalAvailable;
       document.getElementById('heroTotalCampus').textContent = totalRooms;
+
+      const percent = parseInt(totalAvailable/totalRooms*100)
+      console.log(percent);
+
+         const container = document.getElementById("roomUsage");
+
+          const usage = new CircleProgress(container, {
+              size: 100,
+              value: 0,
+              color: "orange"
+          });
+
+        // דוגמה לעדכון דינמי
+        setTimeout(() => usage.set(percent), 1000);
+      
     }
 
     renderHeroNumbers();
