@@ -245,6 +245,17 @@
                      class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
                      value="101" />
             </div>
+
+            <div>
+                <label for="roomCategory" class="block text-sm font-medium text-slate-700 mb-1">קטגוריה</label>
+                <select id="roomCategory" required
+                  class="w-full h-11 px-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-sky-200">
+              </select>
+              <p id="roomNoCategoryHint" class="mt-2 text-xs text-slate-500 hidden">
+                אין קטגוריות עדיין. הוסף קטגוריה קודם.
+              </p>
+            </div>
+
           </div>
 
           <div id="roomFormError" class="hidden text-sm text-red-600"></div>
@@ -268,7 +279,9 @@
   <script>
     // must be 'let' because we modify it (push/filter)
     let buildings = {{ buildings_server | tojson }};
-
+    let classRoom_categories = {{ classRoom_categories_server | tojson }};
+    console.log(classRoom_categories);
+    
     // rooms_server looks like:
     // [
     //   { id: 6, id_building: 15, floor: 1, class_number: 100 },
@@ -500,6 +513,8 @@
 
     const roomBuildingSelect = document.getElementById('roomBuilding');
     const roomNoBuildingsHint = document.getElementById('roomNoBuildingsHint');
+    const roomCategorySelect = document.getElementById('roomCategory');
+    const roomNoCategorySelect = document.getElementById('roomNoCategoryHint');
     const roomFloorInput = document.getElementById('roomFloor');
     const roomNumberInput = document.getElementById('roomNumber');
 
@@ -514,11 +529,25 @@
       roomBuildingSelect.disabled = !hasBuildings;
     }
 
+    function renderRoomCategorySelect() {
+      console.log(buildings);
+      
+      const hasCategories = Array.isArray(classRoom_categories) && classRoom_categories.length > 0;
+      roomNoCategorySelect.classList.toggle('hidden', hasCategories);
+      roomCategorySelect.innerHTML = `<option value="0">יש לבחור קטגוריה</option>`
+      roomCategorySelect.innerHTML += (hasCategories ? classRoom_categories : []).map(c => `
+        <option value="${c.id}">${escapeHtml(c.name ?? '')}</option>
+      `).join('');
+
+      roomCategorySelect.disabled = !hasCategories;
+    }
+
     function openRoomModal() {
       roomErrBox.classList.add('hidden');
       roomErrBox.textContent = '';
 
       renderRoomBuildingsSelect();
+      renderRoomCategorySelect();
 
       roomFloorInput.value = '1';
       roomNumberInput.value = '101';
@@ -559,18 +588,22 @@
       if (roomBuildingSelect.disabled) return showRoomFormError('אין בניינים. קודם הוסף בניין.');
 
       const building_id = parseInt(roomBuildingSelect.value, 10);
+      const roomCategory_id = parseInt(roomCategorySelect.value, 10);
       const floor = parseInt(roomFloorInput.value, 10);
       const class_number = parseInt(roomNumberInput.value, 10);
 
       if (!Number.isInteger(building_id) || building_id < 1)
         return showRoomFormError('בחר בניין תקין');
 
+      if (!Number.isInteger(roomCategory_id) || roomCategory_id < 1)
+        return showRoomFormError('יש לבחור קטגוריה');
+
       if (!Number.isInteger(floor))
         return showRoomFormError('קומה חייבת להיות מספר שלם');
 
       if (!Number.isInteger(class_number) || class_number < 1)
         return showRoomFormError('מספר כיתה חייב להיות מספר שלם >= 1');
-
+      
       try {
         const response = await fetch('dashboardadmin', {
           method: 'POST',
@@ -580,7 +613,8 @@
             params: {
               building_id: building_id,
               floor: floor,
-              class_number: class_number
+              class_number: class_number,
+              category_id:roomCategory_id
             }
           })
         });
