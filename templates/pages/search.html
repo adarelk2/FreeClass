@@ -38,7 +38,7 @@
   <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
       <div class="flex items-center gap-3">
-        <a href="dashboard.html" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
+        <a href="home" class="inline-flex items-center justify-center w-10 h-10 rounded-md hover:bg-slate-100 transition" aria-label="Back">
           <i data-lucide="arrow-right" class="w-5 h-5 text-slate-700"></i>
         </a>
         <h1 class="text-xl font-bold text-slate-800">חיפוש כיתה</h1>
@@ -161,34 +161,40 @@
     // -----------------------------
     // Data (same as React)
     // -----------------------------
-    const spaceTypes = [
-      { value: 'all', label: 'הכל', icon: 'map-pin' },
-      { value: 'classroom', label: 'כיתות', icon: 'monitor' },
-      { value: 'library', label: 'ספריות', icon: 'book-open' },
-      { value: 'lab', label: 'מעבדות', icon: 'monitor' },
-      { value: 'cafe', label: 'קפיטריות', icon: 'coffee' },
-    ];
+    // const spaceTypes = [
+    //   { value: 'all', label: 'הכל', icon: 'map-pin' },
+    //   { value: 'classroom', label: 'כיתות', icon: 'monitor' },
+    //   { value: 'library', label: 'ספריות', icon: 'book-open' },
+    //   { value: 'lab', label: 'מעבדות', icon: 'monitor' },
+    //   { value: 'cafe', label: 'קפיטריות', icon: 'coffee' },
+    // ];
 
-    const buildings = [
-      { value: 'all', label: 'כל הבניינים' },
-      { value: 'engineering', label: 'בניין הנדסה' },
-      { value: 'library', label: 'ספרייה מרכזית' },
-      { value: 'science', label: 'בניין מדעים' },
-      { value: 'student', label: 'בית הסטודנט' },
-    ];
 
-    const spaces = [
-      { id: 1, name: 'כיתה 204', building: 'בניין הנדסה', floor: 2, type: 'classroom', status: 'available' },
-      { id: 2, name: 'חדר קריאה שקט 3', building: 'ספרייה מרכזית', floor: 2, type: 'library', status: 'available' },
-      { id: 3, name: 'מעבדת מחשבים 5', building: 'בניין הנדסה', floor: 1, type: 'lab', status: 'busy' },
-      { id: 4, name: 'כיתה 301', building: 'בניין מדעים', floor: 3, type: 'classroom', status: 'available' },
-      { id: 5, name: 'אזור למידה פתוח', building: 'בית הסטודנט', floor: 1, type: 'library', status: 'available' },
-      { id: 6, name: 'כיתה 102', building: 'בניין הנדסה', floor: 1, type: 'classroom', status: 'busy' },
-      { id: 7, name: 'חדר סמינרים A', building: 'ספרייה מרכזית', floor: 3, type: 'classroom', status: 'available' },
-      { id: 8, name: 'מעבדה 3', building: 'בניין מדעים', floor: 1, type: 'lab', status: 'available' },
-    ];
+    const buildings_rows = {{ buildings | tojson }};
+    const buildings = [{value:"all", label:"הכל"}]
+    buildings_rows.map(building=>
+    {
+      buildings.push({value:building.building_name, label:building.building_name})
+    }
+  )
 
-    const typeLabels = { classroom: 'כיתה', library: 'ספרייה', lab: 'מעבדה', cafe: 'קפיטריה' };
+    const categories = {{ categories_server | tojson }};
+    categories.unshift({name:'הכל', id:"all"})
+    const categories_dict = {}
+    categories.map(category=>{
+      categories_dict[category.id] = category.name
+    })
+
+    const spaces = []
+    buildings_rows.map(building=>{
+      building.rooms.map(room=>{
+        let status = room.is_available ? "available" : "busy"
+        spaces.push({id : room.id, category:room.category, name:`${categories_dict[room.category]} ${room.class_number}`, floor:room.floor, building: building.building_name, status, type: categories_dict[room.category]})
+      })
+    })
+
+    console.log(spaces);
+    
 
     // -----------------------------
     // State
@@ -238,16 +244,16 @@
     // Render chips
     // -----------------------------
     function renderTypeChips() {
-      typeChips.innerHTML = spaceTypes.map(t => {
-        const isSelected = selectedType === t.value;
+      typeChips.innerHTML = categories.map(t => {
+        const isSelected = selectedType == t.id;
         return `
           <button
-            data-type="${t.value}"
+            data-type="${t.id}"
             class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-md border transition
               ${isSelected ? 'bg-sky-600 text-white border-sky-600' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'}"
           >
-            <i data-lucide="${t.icon}" class="w-4 h-4"></i>
-            <span class="text-sm font-medium">${t.label}</span>
+          
+            <span class="text-sm font-medium">${t.name}</span>
           </button>
         `;
       }).join('');
@@ -257,13 +263,15 @@
     // Filter logic (same rules as React)
     // -----------------------------
     function getFilteredSpaces() {
+      console.log(selectedType);
+      
       return spaces.filter(space => {
         if (searchQuery) {
           const q = searchQuery.trim();
           if (q && !space.name.includes(q) && !space.building.includes(q)) return false;
         }
-
-        if (selectedType !== 'all' && space.type !== selectedType) return false;
+                
+        if (selectedType != 'all' && space.category !== selectedType) return false;
 
         if (selectedBuilding !== 'all') {
           const buildingLabel = buildings.find(b => b.value === selectedBuilding)?.label;
@@ -303,7 +311,7 @@
         const iconName = isAvailable ? 'check-circle-2' : 'x-circle';
         const iconColor = isAvailable ? 'text-emerald-600' : 'text-red-600';
 
-        const typeLabel = typeLabels[space.type] || space.type;
+        const typeLabel = space.type;
 
         return `
           <a href="#space?id=${space.id}" class="block">
