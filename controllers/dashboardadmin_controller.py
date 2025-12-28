@@ -7,6 +7,7 @@ from models.class_room_categories import ClassRoomCategoriesModel
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from services.home_service import HomeService
+from services.rooms_service import RoomsService
 
 import jwt
 
@@ -15,7 +16,8 @@ import jwt
 class DashboardadminController(ControllerBase):
     def print(self, params):
         service = HomeService()
-
+    
+        sensor_model = SensorsModel(db)
         rooms_model = ClassRoomsModel(db)
         class_room_categories_model = ClassRoomCategoriesModel(db)
         categories = class_room_categories_model.filter()
@@ -24,8 +26,10 @@ class DashboardadminController(ControllerBase):
         context = {
             "buildings_server": buildings,
             "classRoom_categories_server" : categories,
-            "rooms_server": rooms
+            "rooms_server": rooms,
+            "sensors_server": sensor_model.filter()
         }
+        print(context)
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):

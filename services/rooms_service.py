@@ -7,6 +7,7 @@ from core.config import SENSORE_LOG_ACTIVITY
 from core.database import db as default_db
 from models.classroom_motion_events_model import ClassroomMotionEventsModel
 from models.class_rooms_model import ClassRoomsModel
+from models.sensors_model import SensorsModel
 
 class RoomsService:
     """
