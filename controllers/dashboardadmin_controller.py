@@ -29,7 +29,6 @@ class DashboardadminController(ControllerBase):
             "rooms_server": rooms,
             "sensors_server": sensor_model.filter()
         }
-        print(context)
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
