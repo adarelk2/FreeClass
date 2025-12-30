@@ -8,6 +8,7 @@ from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from services.home_service import HomeService
 from core.validations.CreateValidation import CreateValidation
+from services.rooms_service import RoomsService
 
 import jwt
 
@@ -16,7 +17,8 @@ import jwt
 class DashboardadminController(ControllerBase):
     def print(self, params):
         service = HomeService()
-
+    
+        sensor_model = SensorsModel(db)
         rooms_model = ClassRoomsModel(db)
         class_room_categories_model = ClassRoomCategoriesModel(db)
         categories = class_room_categories_model.filter()
@@ -25,7 +27,8 @@ class DashboardadminController(ControllerBase):
         context = {
             "buildings_server": buildings,
             "classRoom_categories_server" : categories,
-            "rooms_server": rooms
+            "rooms_server": rooms,
+            "sensors_server": sensor_model.filter()
         }
         return self.responseHTML(context, "admin-dashboard")
 
@@ -123,5 +126,18 @@ class DashboardadminController(ControllerBase):
 
         except jwt.InvalidTokenError:
             context["error"] = "Invalid token"
+
+        return self.responseJSON(context, flag)
+
+    def deleteClassRoom(self, params):
+        context = {}
+        flag = False
+        class_id = params["class_id"]
+        class_model = ClassRoomsModel(db)
+        check_room = class_model.get_by_id(class_id)
+        if check_room:
+            flag = True
+            room_service = RoomsService()
+            room_service.delete_room_by_id(class_id)
 
         return self.responseJSON(context, flag)
