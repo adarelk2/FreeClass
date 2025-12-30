@@ -12,7 +12,7 @@ class ModelBase:
         where: Optional[Dict[str, Any]] = None,
         *,
         order_by: Optional[str] = None,
-        limit: Optional[int] = None,
+        limit: Optional[int] = 200,
         offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
