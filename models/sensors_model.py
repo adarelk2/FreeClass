@@ -84,3 +84,6 @@ class SensorsModel(ModelBase):
         if not token:
             raise ValueError("delete_by_token() requires token")
         return self.db.delete(self.TABLE, {"token": token})
+
+    def delete_sensor_by_room_id(self, classroom_id):
+        return self.db.delete(self.TABLE,{"room_id": classroom_id})

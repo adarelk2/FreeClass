@@ -33,6 +33,7 @@ class RoomsService:
         self.rooms_model = rooms_model or ClassRoomsModel(self.db)
         self.motion_events_model = motion_events_model or ClassroomMotionEventsModel(self.db)
 
+        self.sensor_model = SensorsModel(self.db)
     # ---- ADT: public API (keep names) ----
 
     def getRoomsAvailable(self):
@@ -110,3 +111,13 @@ class RoomsService:
             except Exception:
                 continue
         return busy
+
+
+
+    def delete_room_by_id(self, classroom_id):
+
+        self.sensor_model.delete_sensor_by_room_id(classroom_id)
+        self.motion_events_model.delete_events_by_room_id(classroom_id)
+        self.rooms_model.delete_room_by_id(classroom_id)
+
+        return True

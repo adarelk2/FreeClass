@@ -110,3 +110,16 @@ class DashboardadminController(ControllerBase):
             context["error"] = "Invalid token"
 
         return self.responseJSON(context, flag)
+
+    def deleteClassRoom(self, params):
+        context = {}
+        flag = False
+        class_id = params["class_id"]
+        class_model = ClassRoomsModel(db)
+        check_room = class_model.get_by_id(class_id)
+        if check_room:
+            flag = True
+            room_service = RoomsService()
+            room_service.delete_room_by_id(class_id)
+
+        return self.responseJSON(context, flag)

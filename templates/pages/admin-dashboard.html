@@ -363,7 +363,16 @@
   </div>
 
   <script>
-    // must be 'let' because we modify it (push/filter)
+    // ============================================================
+    // CONFIG
+    // אם הדף והשרת לא באותו דומיין/פורט, החלף לשורה הזו:
+    // const API_URL = 'http://localhost:4000/dashboardadmin';
+    // ============================================================
+    const API_URL = '/dashboardadmin';
+
+    // -------------------- Initial Data --------------------
+    // אם אתה ב-Flask/Jinja2 - זה יעבוד.
+    // אם אתה רץ כ-HTML רגיל בלי template engine, תחליף למערכים ידניים.
     let buildings = {{ buildings_server | tojson }};
     let classRoom_categories = {{ classRoom_categories_server | tojson }};
     let sensors = {{ sensors_server | tojson }};
@@ -389,11 +398,22 @@
     }
 
     function formatRoomLabel(room) {
-      // room: {id_building, floor, class_number}
       const bname = getBuildingNameById(room.id_building);
       const floor = (room.floor ?? '-');
       const num = (room.class_number ?? '-');
       return `${bname} / קומה ${floor} / כיתה ${num}`;
+    }
+
+    // -------------------- API helper --------------------
+    async function apiCall(method, params) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, params })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
     }
 
     // -------------------- Tabs --------------------
@@ -439,18 +459,31 @@
       lucide.createIcons();
     }
 
-    function deleteBuilding(id) {
-      buildings = buildings.filter(b => b.id !== id);
-      renderBuildingsTable();
+    // ===================== DELETE BUILDING (API) =====================
+    // IMPORTANT: שנה את שם ה-method וה-params למה שהשרת שלך מצפה!
+    // כאן שמתי: method='deleteBuilding', params={ building_id: id }
+    async function deleteBuilding(id) {
+      if (!confirm('למחוק בניין? זה ימחק גם כיתות וחיישנים קשורים (ב-UI).')) return;
 
-      rooms = rooms.filter(r => Number(r.id_building) !== Number(id));
-      renderRoomsTable();
+      try {
+        const result = await apiCall('deleteBuilding', { building_id: id });
+        if (!result.flag) return alert('השרת סירב למחוק את הבניין');
 
-      // sensors that point to deleted rooms won't show properly; optional cleanup:
-      sensors = sensors.filter(s => getRoomById(s.room_id) !== null);
-      renderSensorsTable();
+        // Update UI after server success
+        buildings = buildings.filter(b => Number(b.id) !== Number(id));
+        rooms = rooms.filter(r => Number(r.id_building) !== Number(id));
+        sensors = sensors.filter(s => getRoomById(s.room_id) !== null);
 
-      renderRoomBuildingsSelect();
+        renderBuildingsTable();
+        renderRoomsTable();
+        renderSensorsTable();
+        renderRoomBuildingsSelect();
+        renderSensorRoomsSelect();
+
+      } catch (err) {
+        console.error(err);
+        alert('שגיאת תקשורת עם השרת');
+      }
     }
 
     // -------------------- Rooms Table --------------------
@@ -480,7 +513,7 @@
           <td class="py-3 text-slate-500">${r.floor ?? '-'}</td>
           <td class="py-3 text-slate-500">${r.class_number ?? '-'}</td>
           <td class="py-3">
-            <button onclick="deleteRoomLocal(${r.id})"
+            <button onclick="deleteRoom(${r.id})"
                     class="px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 text-sm">
               מחק
             </button>
@@ -491,13 +524,28 @@
       lucide.createIcons();
     }
 
-    function deleteRoomLocal(id) {
-      rooms = rooms.filter(r => r.id !== id);
-      renderRoomsTable();
+    // ===================== DELETE ROOM (API) =====================
+    // לפי הדוגמה שלך ב-Postman: method='deleteClassRoom', params={ class_id: id }
+    async function deleteRoom(id) {
+      if (!confirm('למחוק כיתה?')) return;
 
-      // optional: remove sensors pointing to that room (local UI only)
-      sensors = sensors.filter(s => Number(s.room_id) !== Number(id));
-      renderSensorsTable();
+      try {
+        const result = await apiCall('deleteClassRoom', { class_id: id }); // <-- שנה אם צריך
+        if (!result.flag) return alert('השרת סירב למחוק את הכיתה');
+
+        // Update UI after server success
+        rooms = rooms.filter(r => Number(r.id) !== Number(id));
+        sensors = sensors.filter(s => Number(s.room_id) !== Number(id));
+
+        renderRoomsTable();
+        renderSensorsTable();
+        renderBuildingsTable();
+        renderSensorRoomsSelect();
+
+      } catch (err) {
+        console.error(err);
+        alert('שגיאת תקשורת עם השרת');
+      }
     }
 
     // -------------------- Sensors Table --------------------
@@ -526,7 +574,7 @@
               <code class="px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-700">${escapeHtml(s.token ?? '')}</code>
             </td>
             <td class="py-3">
-              <button onclick="deleteSensorLocal(${s.id})"
+              <button onclick="deleteSensor(${s.id})"
                       class="px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 text-sm">
                 מחק
               </button>
@@ -538,11 +586,22 @@
       lucide.createIcons();
     }
 
-    function deleteSensorLocal(id) {
-      sensors = sensors.filter(s => Number(s.id) !== Number(id));
-      renderSensorsTable();
+    // ===================== DELETE SENSOR (API) =====================
+    // כאן שמתי: method='deleteSensor', params={ sensor_id: id }
+    async function deleteSensor(id) {
+      if (!confirm('למחוק חיישן?')) return;
 
-      // If you have server delete endpoint, replace with async deleteSensor(id)
+      try {
+        const result = await apiCall('deleteSensor', { sensor_id: id }); // <-- שנה אם צריך
+        if (!result.flag) return alert('השרת סירב למחוק את החיישן');
+
+        sensors = sensors.filter(s => Number(s.id) !== Number(id));
+        renderSensorsTable();
+
+      } catch (err) {
+        console.error(err);
+        alert('שגיאת תקשורת עם השרת');
+      }
     }
 
     // -------------------- Building Modal --------------------
@@ -609,21 +668,10 @@
         return showBuildingFormError('מספר קומות חייב להיות מספר שלם >= 1');
 
       try {
-        const response = await fetch('dashboardadmin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            method: 'createNewBuilding',
-            params: { building_name: name, color: color, floors: floors }
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
+        const result = await apiCall('createNewBuilding', { building_name: name, color, floors });
         if (!result.flag) return showBuildingFormError('השרת סירב ליצור את הבניין');
 
         buildings.push({ id: result.id, name, floors, color, totalRooms: 0 });
-
         renderBuildingsTable();
         renderRoomBuildingsSelect();
         closeBuildingModal();
@@ -728,21 +776,12 @@
       if (!Number.isInteger(class_number) || class_number < 1) return showRoomFormError('מספר כיתה חייב להיות מספר שלם >= 1');
 
       try {
-        const response = await fetch('dashboardadmin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            method: 'createNewRoom',
-            params: { building_id, floor, class_number, category_id: roomCategory_id }
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
+        const result = await apiCall('createNewRoom', { building_id, floor, class_number, category_id: roomCategory_id });
         if (!result.flag) return showRoomFormError('השרת סירב ליצור את הכיתה');
 
         rooms.push({ id: result.id, id_building: building_id, floor, class_number });
         renderRoomsTable();
+        renderSensorRoomsSelect();
         closeRoomModal();
 
       } catch (err) {
@@ -830,26 +869,11 @@
       if (!Number.isInteger(room_id) || room_id < 1) return showSensorFormError('בחר כיתה תקינה');
       if (!token) return showSensorFormError('חובה להזין Token');
 
-      // Optional: basic duplicate guard on UI (token must be unique)
       const tokenExists = sensors.some(s => String(s.token) === token);
       if (tokenExists) return showSensorFormError('Token כבר קיים במערכת');
 
       try {
-        const response = await fetch('dashboardadmin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            method: 'createNewSensor', // <-- change if your controller expects a different method name
-            params: {
-              room_id: room_id,
-              token: token
-            }
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
-
+        const result = await apiCall('createNewSensor', { room_id, token });
         if (!result.flag) return showSensorFormError('השרת סירב ליצור את החיישן');
 
         sensors.push({ id: result.id, room_id, token });
@@ -876,6 +900,8 @@
     renderRoomsTable();
     renderSensorsTable();
     setActiveTab('rooms');
+    renderRoomBuildingsSelect();
+    renderSensorRoomsSelect();
     lucide.createIcons();
   </script>
 
