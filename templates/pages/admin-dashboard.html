@@ -10,6 +10,8 @@
 
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body class="min-h-screen bg-slate-100">
@@ -115,7 +117,7 @@
                 <tr class="text-slate-500 border-b">
                   <th class="text-right py-3">ID</th>
                   <th class="text-right py-3">כיתה</th>
-                  <th class="text-right py-3">Token</th>
+                  <th class="text-right py-3">Public_key</th>
                   <th class="text-right py-3">פעולות</th>
                 </tr>
               </thead>
@@ -335,13 +337,10 @@
           </div>
 
           <div>
-            <label for="sensorToken" class="block text-sm font-medium text-slate-700 mb-1">Token</label>
+            <label for="sensorToken" class="block text-sm font-medium text-slate-700 mb-1">קוד ציבורי</label>
             <input id="sensorToken" type="text" required
                    class="w-full h-11 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
                    placeholder="למשל: token123" />
-            <p class="mt-2 text-xs text-slate-500">
-              שים לב: כרגע ה-UI לא מייצר טוקן אוטומטית — הוא שומר את מה שתזין.
-            </p>
           </div>
 
           <div id="sensorFormError" class="hidden text-sm text-red-600"></div>
@@ -571,7 +570,7 @@
             <td class="py-3 font-medium text-slate-800">${s.id ?? '-'}</td>
             <td class="py-3 text-slate-700">${escapeHtml(roomLabel)}</td>
             <td class="py-3">
-              <code class="px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-700">${escapeHtml(s.token ?? '')}</code>
+              <code class="px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-700">${escapeHtml(s.public_key ?? '')}</code>
             </td>
             <td class="py-3">
               <button onclick="deleteSensor(${s.id})"
@@ -867,14 +866,20 @@
       const token = (sensorTokenInput.value || '').trim();
 
       if (!Number.isInteger(room_id) || room_id < 1) return showSensorFormError('בחר כיתה תקינה');
-      if (!token) return showSensorFormError('חובה להזין Token');
+      if (!token) return showSensorFormError('חובה להזין public_key');
 
       const tokenExists = sensors.some(s => String(s.token) === token);
-      if (tokenExists) return showSensorFormError('Token כבר קיים במערכת');
+      if (tokenExists) return showSensorFormError('public_key כבר קיים במערכת');
 
       try {
-        const result = await apiCall('createNewSensor', { room_id, token });
+        const result = await apiCall('createNewSensor', { room_id, "public_key":token });
         if (!result.flag) return showSensorFormError('השרת סירב ליצור את החיישן');
+       
+        Swal.fire({
+          icon: "success",
+          title: "יש לשמור את הקוד הפרטי להמשך",
+          text: result.msg.private_key
+        });
 
         sensors.push({ id: result.id, room_id, token });
         renderSensorsTable();
