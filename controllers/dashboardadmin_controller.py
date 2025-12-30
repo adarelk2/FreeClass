@@ -7,6 +7,7 @@ from models.class_room_categories import ClassRoomCategoriesModel
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from services.home_service import HomeService
+from core.validations.CreateValidation import CreateValidation
 
 import jwt
 
@@ -42,13 +43,17 @@ class DashboardadminController(ControllerBase):
         return {"json": {"flag":False}}
 
     def createNewSensor(self, params):
+        validator = CreateValidation("sensor", params).create_validator()
+        errors = validator.validate()
+        flag = False
+        context = {}
+        if errors:
+           return self.responseJSON(errors, flag)
         #make auth for admin important!
         sensor_model = SensorsModel(db)
         sensor_token = params.get("token", "")
         room_id = params.get("room_id", "")
-
         classRoom_model = ClassRoomsModel(db)
-
         room = classRoom_model.get_by_id(room_id)
         if room:
             id = sensor_model.create({"room_id":room_id, "token" : sensor_token})
@@ -57,11 +62,18 @@ class DashboardadminController(ControllerBase):
         return {"json": {"flag":False}}
 
     def createNewRoom(self, params):
+        validator = CreateValidation("room", params).create_validator()
+        errors = validator.validate()
+        flag = False
+        context = {}
+        if errors:
+           return self.responseJSON(errors, flag)
         #make auth for admin important!
         building_id = params.get("building_id", "")
         floor = params.get("floor", 0)
         class_number = params.get("class_number", 0)
         category_id = params.get("category_id", 0)
+
 
         building_model = BuildingModel(db)
 
@@ -75,6 +87,12 @@ class DashboardadminController(ControllerBase):
         return {"json": {"flag":False}}
 
     def createNewBuilding(self, params):
+        validator = CreateValidation("building", params).create_validator()
+        errors = validator.validate()
+        flag = False
+        context = {}
+        if errors:
+           return self.responseJSON(errors, flag)
         #make auth for admin important!
         building_name = params.get("building_name", "")
         floors= params.get("floors", 0)
