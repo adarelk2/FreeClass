@@ -7,15 +7,17 @@ from models.class_room_categories import ClassRoomCategoriesModel
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from services.home_service import HomeService
+from core.validations.CreateValidation import CreateValidation
+from services.rooms_service import RoomsService
 
 import jwt
-
-
+import time
 # app/controllers/home_controller.py
 class DashboardadminController(ControllerBase):
     def print(self, params):
         service = HomeService()
-
+    
+        sensor_model = SensorsModel(db)
         rooms_model = ClassRoomsModel(db)
         class_room_categories_model = ClassRoomCategoriesModel(db)
         categories = class_room_categories_model.filter()
@@ -24,14 +26,15 @@ class DashboardadminController(ControllerBase):
         context = {
             "buildings_server": buildings,
             "classRoom_categories_server" : categories,
-            "rooms_server": rooms
+            "rooms_server": rooms,
+            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, sensor_model.filter()))
         }
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
         sensor_model = SensorsModel(db)
-        sensor_token = params.get("token", "token")
-        sensor = sensor_model.get_by_token(sensor_token)
+        sensor_private_key = params.get("private_key", "private_key")
+        sensor = sensor_model.get_by_privateKey(sensor_private_key)
 
         if sensor:
             mention_events_model = ClassroomMotionEventsModel(db)
@@ -41,27 +44,36 @@ class DashboardadminController(ControllerBase):
 
         return {"json": {"flag":False}}
 
-    def createNewSensor(self, params):
+    def createNewSensor(self, params):    
+        validator = CreateValidation("sensor", params).create_validator()
+        errors = validator.validate()
+        if errors:
+           return self.responseJSON(errors, False)
         #make auth for admin important!
         sensor_model = SensorsModel(db)
-        sensor_token = params.get("token", "")
+
+        private_key = jwt.encode({"role": "private_key", "iat": int(time.time())}, SECRET_JWT_KEY, algorithm="HS256")
+
         room_id = params.get("room_id", "")
-
         classRoom_model = ClassRoomsModel(db)
-
         room = classRoom_model.get_by_id(room_id)
         if room:
-            id = sensor_model.create({"room_id":room_id, "token" : sensor_token})
-            return {"json": {"flag":True, "id":id}}
-
-        return {"json": {"flag":False}}
-
+            id = sensor_model.create({"room_id":room_id, "private_key" : private_key, "public_key" : params['public_key']})
+            return self.responseJSON({"public_key": params['public_key'], "private_key": private_key, "id": id}, True)
+        
+        return self.responseJSON({}, False)
+    
     def createNewRoom(self, params):
+        validator = CreateValidation("room", params).create_validator()
+        errors = validator.validate()
+        if errors:
+           return self.responseJSON(errors, False)
         #make auth for admin important!
         building_id = params.get("building_id", "")
         floor = params.get("floor", 0)
         class_number = params.get("class_number", 0)
         category_id = params.get("category_id", 0)
+
 
         building_model = BuildingModel(db)
 
@@ -70,11 +82,17 @@ class DashboardadminController(ControllerBase):
             room_model = ClassRoomsModel(db)
 
             id = room_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
-            return {"json": {"flag":True, "id":id}}
+            return self.responseJSON({"id":id}, True)
 
-        return {"json": {"flag":False}}
+        return self.responseJSON({}, False)
 
     def createNewBuilding(self, params):
+        validator = CreateValidation("building", params).create_validator()
+        errors = validator.validate()
+        flag = False
+        context = {}
+        if errors:
+           return self.responseJSON(errors, flag)
         #make auth for admin important!
         building_name = params.get("building_name", "")
         floors= params.get("floors", 0)
@@ -105,5 +123,18 @@ class DashboardadminController(ControllerBase):
 
         except jwt.InvalidTokenError:
             context["error"] = "Invalid token"
+
+        return self.responseJSON(context, flag)
+
+    def deleteClassRoom(self, params):
+        context = {}
+        flag = False
+        class_id = params["class_id"]
+        class_model = ClassRoomsModel(db)
+        check_room = class_model.get_by_id(class_id)
+        if check_room:
+            flag = True
+            room_service = RoomsService()
+            room_service.delete_room_by_id(class_id)
 
         return self.responseJSON(context, flag)

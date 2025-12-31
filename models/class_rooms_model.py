@@ -60,3 +60,10 @@ class ClassRoomsModel(ModelBase):
             filter=fields,
             where={"id": classroom_id},
         )
+
+
+
+    def delete_room_by_id(self, classroom_id):
+        return self.db.delete(self.TABLE,{"id": classroom_id})
+
+
