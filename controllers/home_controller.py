@@ -1,11 +1,11 @@
 # controllers/home_controller.py
 from core.controller_base import ControllerBase
-from services.home_service import HomeService
-
+from container import createModel
+from container import createService
 
 class HomeController(ControllerBase):
     def print(self, params):
-        service = HomeService()
+        service = createService("HomeService")
 
         buildings = service.getHomeBuildingsCards()
         recent_spaces = service.getHomeRecentSpaces(limit=10)

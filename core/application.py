@@ -9,7 +9,8 @@ from flask import render_template, abort, Response, jsonify
 from werkzeug.wrappers import Request
 
 from core.controller_loader import ControllerLoader
-
+from container import createModel
+from container import createService
 
 @dataclass
 class AppCall:
@@ -25,6 +26,7 @@ class Application:
 
     def handle(self, request: Request, controller_from_path: str) -> Response:
         errors: list[str] = []
+        print(createService("RoomsService"))
         call = self._parse_request(request, controller_from_path)
         if not self._is_valid_request(call, errors):
             return render_template("error.html", errors=errors), 400

@@ -1,7 +1,7 @@
-from models.users_model import UsersModel
 from core.controller_base import ControllerBase
-from core.database import db
 from core.config import (SECRET_JWT_KEY)
+from container import createModel
+from container import createService
 import jwt
 import time
 
@@ -14,7 +14,7 @@ class AdminloginController(ControllerBase):
     def checkLogin(self,params):
         context = {}
         flag = False
-        users_model = UsersModel(db)
+        users_model = createModel("UsersModel")
         username = params["username"]
         password = params["password"]
 
