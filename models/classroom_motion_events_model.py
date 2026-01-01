@@ -38,3 +38,6 @@ class ClassroomMotionEventsModel(ModelBase):
     def get_by_id(self, event_id: int) -> Optional[Dict[str, Any]]:
         rows = self.db.select(self.TABLE, {"id": event_id})
         return rows[0] if rows else None
+
+    def delete_events_by_room_id(self, classroom_id):
+        return self.db.delete(self.TABLE,{"classroom_id": classroom_id})

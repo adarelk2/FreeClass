@@ -15,7 +15,8 @@ class SensorsModel(ModelBase):
     +---------+--------------+------+-----+---------+----------------+
     | id      | int unsigned | NO   | PRI | NULL    | auto_increment |
     | room_id | int          | NO   | MUL | NULL    |                |
-    | token   | varchar(255) | NO   | UNI | NULL    |                |
+    | private_key   | varchar(255) | NO   | UNI | NULL    |                |
+    | public_key   | varchar(255) | NO   | UNI | NULL    |                |
     +---------+--------------+------+-----+---------+----------------+
 
     Notes:
@@ -31,13 +32,7 @@ class SensorsModel(ModelBase):
     def create(self, data: Dict[str, Any]) -> int:
         if not data:
             raise ValueError("create() requires data")
-
-        if "token" not in data or not data["token"]:
-            raise ValueError("create() requires non-empty 'token'")
-
-        if "room_id" not in data or data["room_id"] is None:
-            raise ValueError("create() requires 'room_id'")
-
+       
         new_id = self.db.insert(self.TABLE, data)
         if new_id is None:
             raise RuntimeError("Insert succeeded but no lastrowid was returned")
@@ -48,10 +43,10 @@ class SensorsModel(ModelBase):
         rows = self.db.select(self.TABLE, {"id": sensor_id})
         return rows[0] if rows else None
 
-    def get_by_token(self, token: str) -> Optional[Dict[str, Any]]:
-        if not token:
-            raise ValueError("get_by_token() requires token")
-        rows = self.db.select(self.TABLE, {"token": token})
+    def get_by_privateKey(self, private_key: str) -> Optional[Dict[str, Any]]:
+        if not private_key:
+            raise ValueError("get_by_privateKey() requires private_key")
+        rows = self.db.select(self.TABLE, {"private_key": private_key})
         return rows[0] if rows else None
 
     def list_by_room_id(self, room_id: int) -> List[Dict[str, Any]]:
@@ -66,8 +61,8 @@ class SensorsModel(ModelBase):
             raise ValueError("update_by_id() requires at least one field")
 
         # Optional: prevent empty token updates
-        if "token" in fields and not fields["token"]:
-            raise ValueError("update_by_id() cannot set empty 'token'")
+        if "public_key" in fields and not fields["public_key"]:
+            raise ValueError("update_by_id() cannot set empty 'public_key'")
 
         return self.db.update(self.TABLE, filter=fields, where={"id": sensor_id})
 
@@ -84,3 +79,6 @@ class SensorsModel(ModelBase):
         if not token:
             raise ValueError("delete_by_token() requires token")
         return self.db.delete(self.TABLE, {"token": token})
+
+    def delete_sensor_by_room_id(self, classroom_id):
+        return self.db.delete(self.TABLE,{"room_id": classroom_id})
