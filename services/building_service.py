@@ -1,12 +1,6 @@
 # services/building_service.py
 from __future__ import annotations
 
-from core.database import db as default_db
-from models.building_model import BuildingModel
-from models.class_rooms_model import ClassRoomsModel
-from services.rooms_service import RoomsService
-
-
 class BuildingService:
     """
     Domain service for buildings.
@@ -22,10 +16,10 @@ class BuildingService:
     """
 
     def __init__(self, db_instance=None, building_model=None, classrooms_model=None, rooms_service=None):
-        self.db = db_instance or default_db
-        self.building_model = building_model or BuildingModel(self.db)
-        self.classrooms_model = classrooms_model or ClassRoomsModel(self.db)
-        self.rooms_service = rooms_service or RoomsService(self.db)
+        self.db = db_instance
+        self.building_model = building_model
+        self.classrooms_model = classrooms_model
+        self.rooms_service = rooms_service
 
     # -------------------------
     # Small internal helpers
