@@ -1,15 +1,15 @@
 # controllers/home_controller.py
 from core.controller_base import ControllerBase
-from container import createModel
-from container import createService
 
 class HomeController(ControllerBase):
+    def __init__(self, _container):
+        self.home_service = _container.home_service
+        
     def print(self, params):
-        service = createService("HomeService")
 
-        buildings = service.getHomeBuildingsCards()
-        recent_spaces = service.getHomeRecentSpaces(limit=10)
-        available_now = service.getHomeAvailableNow(limit=6)
+        buildings = self.home_service.getHomeBuildingsCards()
+        recent_spaces = self.home_service.getHomeRecentSpaces(limit=10)
+        available_now = self.home_service.getHomeAvailableNow(limit=6)
 
         context = {
             "page": "home",

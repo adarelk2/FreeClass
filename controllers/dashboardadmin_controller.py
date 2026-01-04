@@ -1,38 +1,41 @@
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
 from core.validations.CreateValidation import CreateValidation
-from container import createModel
-from container import createService
 import jwt
 import time
 # app/controllers/home_controller.py
 class DashboardadminController(ControllerBase):
+    def __init__(self, _container):
+        #models
+        self.sensor_model = _container.sensors_model
+        self.class_rooms_model = _container.class_rooms_model
+        self.class_room_categories_model = _container.categories_model
+        self.motion_events_model = _container.motion_events_model
+        self.building_model = _container.building_model
+
+        ##Services
+        self.home_service = _container.home_service
+        self.rooms_service = _container.rooms_service
+
     def print(self, params):
-        service = createService("HomeService")
-    
-        sensor_model = createModel("SensorsModel")
-        class_rooms_model = createModel("ClassRoomsModel")
-        class_room_categories_model = createModel("ClassRoomCategoriesModel")
-        categories = class_room_categories_model.filter()
-        rooms = class_rooms_model.filter()
-        buildings = service.getHomeBuildingsCards()
+        categories = self.class_room_categories_model.filter()
+        rooms = self.class_rooms_model.filter()
+        buildings = self.home_service.getHomeBuildingsCards()
         context = {
             "buildings_server": buildings,
             "classRoom_categories_server" : categories,
             "rooms_server": rooms,
-            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, sensor_model.filter()))
+            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, self.sensor_model.filter()))
         }
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
-        sensor_model = createModel("SensorsModel")
         sensor_private_key = params.get("private_key", "private_key")
-        sensor = sensor_model.get_by_privateKey(sensor_private_key)
+        sensor = self.sensor_model.get_by_privateKey(sensor_private_key)
 
         if sensor:
-            mention_events_model = createModel("ClassroomMotionEventsModel")
             new_row = {"classroom_id":sensor['room_id'], "sensor_id": sensor['id']}
-            id = mention_events_model.create(new_row)
+            id = self.motion_events_model.create(new_row)
             return {"json": {"flag":True, "id":id}}
 
         return {"json": {"flag":False}}
@@ -43,15 +46,13 @@ class DashboardadminController(ControllerBase):
         if errors:
            return self.responseJSON(errors, False)
         #make auth for admin important!
-        sensor_model = createModel("SensorsModel")
-
         private_key = jwt.encode({"role": "private_key", "iat": int(time.time())}, SECRET_JWT_KEY, algorithm="HS256")
 
         room_id = params.get("room_id", "")
-        classRoom_model = createModel("ClassRoomsModel")
-        room = classRoom_model.get_by_id(room_id)
+
+        room = self.class_rooms_model.get_by_id(room_id)
         if room:
-            id = sensor_model.create({"room_id":room_id, "private_key" : private_key, "public_key" : params['public_key']})
+            id = self.sensor_model.create({"room_id":room_id, "private_key" : private_key, "public_key" : params['public_key']})
             return self.responseJSON({"public_key": params['public_key'], "private_key": private_key, "id": id}, True)
         
         return self.responseJSON({}, False)
@@ -67,14 +68,9 @@ class DashboardadminController(ControllerBase):
         class_number = params.get("class_number", 0)
         category_id = params.get("category_id", 0)
 
-
-        building_model = createModel("BuildingModel")
-
-        building = building_model.get_by_id(building_id)
+        building = self.building_model.get_by_id(building_id)
         if building:
-            room_model = createModel("ClassRoomsModel")
-
-            id = room_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
+            id = self.class_rooms_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
             return self.responseJSON({"id":id}, True)
 
         return self.responseJSON({}, False)
@@ -82,17 +78,14 @@ class DashboardadminController(ControllerBase):
     def createNewBuilding(self, params):
         validator = CreateValidation("building", params).create_validator()
         errors = validator.validate()
-        flag = False
-        context = {}
         if errors:
-           return self.responseJSON(errors, flag)
+           return self.responseJSON(errors, False)
         #make auth for admin important!
         building_name = params.get("building_name", "")
         floors= params.get("floors", 0)
         color= params.get("color", "#000")
-        building_model = createModel("BuildingModel")
 
-        id = building_model.create({"building_name": building_name, "floors": floors, "color": color})
+        id = self.building_model.create({"building_name": building_name, "floors": floors, "color": color})
         if id:
             return {"json": {"flag":True, "id":id}}
 
@@ -123,11 +116,9 @@ class DashboardadminController(ControllerBase):
         context = {}
         flag = False
         class_id = params["class_id"]
-        class_model = createModel("ClassRoomsModel")
-        check_room = class_model.get_by_id(class_id)
+        check_room = self.class_rooms_model.get_by_id(class_id)
         if check_room:
             flag = True
-            room_service = createService("RoomsService")
-            room_service.delete_room_by_id(class_id)
+            self.rooms_service.delete_room_by_id(class_id)
 
         return self.responseJSON(context, flag)
