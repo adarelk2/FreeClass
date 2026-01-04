@@ -1,4 +1,4 @@
-class ControllerBase:
+class ControllerBase:         
     def responseHTML(self, _context={}, _fileHTML="", _status=200):
         return {
             "template": f"pages/{_fileHTML}.html",
@@ -14,4 +14,3 @@ class ControllerBase:
             },
             "status": _status
           }
-   

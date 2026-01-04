@@ -22,7 +22,6 @@ class ClassRoomsModel(ModelBase):
         super().__init__("classrooms")
         self.db = db
 
-
     def create(self, data: Dict[str, Any]) -> int:
         if not data:
             raise ValueError("create() requires data")

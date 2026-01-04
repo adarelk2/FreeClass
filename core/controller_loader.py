@@ -17,7 +17,7 @@ class ControllerLoader:
         file_name = f"{name}_controller.py"
         return file_name in os.listdir(self.CONTROLLERS_PATH)
 
-    def get_controller(self, name: str) -> Any:
+    def get_controller(self, name: str, _container) -> Any:
         if not self.is_controller_exist(name):
             raise KeyError(f"Controller '{name}' not found")
 
@@ -32,4 +32,4 @@ class ControllerLoader:
             )
 
         cls = getattr(module, class_name)
-        return cls()
+        return cls(_container)
