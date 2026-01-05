@@ -23,7 +23,7 @@ class AdminloginController(ControllerBase):
         user = users_model.filter({"username" : username, "password": password})
         if len(user)>0:
 
-            encoded = jwt.encode({"exp":int(time.time())+60 , "username": user[0]['username'], "role":user[0]['role']}, SECRET_JWT_KEY, algorithm="HS256")
+            encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user[0]['username'], "role":user[0]['role']}, SECRET_JWT_KEY, algorithm="HS256")
             context['token'] = encoded
             flag = True
         return self.responseJSON(context, flag)

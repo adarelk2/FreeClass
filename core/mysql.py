@@ -5,9 +5,9 @@ from typing import Optional, Any, Dict, List, Tuple
 import re
 import mysql.connector
 from mysql.connector import MySQLConnection
+from core.interfaces.db import DB
 
-
-class MySQL:
+class MySQL(DB):
     """
     Minimal MySQL wrapper with:
     - insert/update/delete
