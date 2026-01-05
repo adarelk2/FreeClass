@@ -44,3 +44,6 @@ class BuildingModel(ModelBase):
         if not fields:
             raise ValueError("update_by_id() requires at least one field")
         return self.db.update(self.TABLE, filter=fields, where={"id": building_id})
+
+    def delete_build_by_id(self, building_id):
+        return self.db.delete(self.TABLE, {"id": building_id})

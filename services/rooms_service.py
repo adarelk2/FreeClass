@@ -110,9 +110,12 @@ class RoomsService:
 
 
     def delete_room_by_id(self, classroom_id):
+        check_room = self.rooms_model.get_by_id(classroom_id)
+        if check_room == None:
+            return False
+        else:
+            self.sensor_model.delete_sensor_by_room_id(classroom_id)
+            self.motion_events_model.delete_events_by_room_id(classroom_id)
+            self.rooms_model.delete_room_by_id(classroom_id)
+            return True
 
-        self.sensor_model.delete_sensor_by_room_id(classroom_id)
-        self.motion_events_model.delete_events_by_room_id(classroom_id)
-        self.rooms_model.delete_room_by_id(classroom_id)
-
-        return True

@@ -16,6 +16,7 @@ class DashboardadminController(ControllerBase):
         ##Services
         self.home_service = _container.home_service
         self.rooms_service = _container.rooms_service
+        self.building_service = _container.building_service
 
     def print(self, params):
         categories = self.class_room_categories_model.filter()
@@ -116,9 +117,15 @@ class DashboardadminController(ControllerBase):
         context = {}
         flag = False
         class_id = params["class_id"]
-        check_room = self.class_rooms_model.get_by_id(class_id)
-        if check_room:
+        if self.rooms_service.delete_room_by_id(class_id):
             flag = True
-            self.rooms_service.delete_room_by_id(class_id)
+        return self.responseJSON(context, flag)
 
+
+    def deleteBuilding(self, params):
+        context = {}
+        flag = False
+        building_id = params["building_id"]
+        if self.building_service.delete_building_by_id(building_id):
+            flag = True
         return self.responseJSON(context, flag)
