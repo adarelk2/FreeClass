@@ -13,7 +13,7 @@ from services.rooms_service import RoomsService
 from services.building_service import BuildingService
 from services.home_service import HomeService
 
-class SimpleFreeClassTests(unittest.TestCase):
+class FreeClassTests(unittest.TestCase):
 
     def setUp(self):
         self.db = MockJSONDB()
