@@ -99,3 +99,18 @@ class BuildingService:
         available_ids = self.rooms_service.getAvailableRoomIds() if include_availability else []
 
         return self._attach_rooms_to_buildings(buildings, rooms, include_availability, available_ids)
+
+    def delete_building_by_id(self, building_id):
+        check_building = self.building_model.get_by_id(building_id)
+        if check_building == None:
+            return False
+        else:
+            rooms =self.classrooms_model.filter({"id_building": building_id})
+            for room in rooms:
+                self.rooms_service.delete_room_by_id(room['id'])
+
+            self.building_model.delete_build_by_id(building_id)
+            return True
+
+
+
