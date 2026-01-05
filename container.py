@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 # db
-from core.database import db
+from core.create_database import db
 
 # models
 from models.building_model import BuildingModel
