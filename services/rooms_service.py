@@ -1,13 +1,8 @@
 # services/rooms_service.py
 from __future__ import annotations
-
 from datetime import datetime
-
 from core.config import SENSORE_LOG_ACTIVITY
-from core.database import db as default_db
-from models.classroom_motion_events_model import ClassroomMotionEventsModel
-from models.class_rooms_model import ClassRoomsModel
-from models.sensors_model import SensorsModel
+
 
 class RoomsService:
     """
@@ -24,16 +19,16 @@ class RoomsService:
     - filterEventsBySec()
     """
 
-    def __init__(self, db_instance=None, rooms_model=None, motion_events_model=None, activity_seconds=None, utcnow_fn=None):
-        self.db = db_instance or default_db
+    def __init__(self, db_instance=None, rooms_model=None, motion_events_model=None ,sensor_model = None):
+        self.db = db_instance
 
-        self.activity_seconds = int(activity_seconds) if activity_seconds is not None else int(SENSORE_LOG_ACTIVITY)
-        self.utcnow_fn = utcnow_fn or datetime.utcnow
+        self.activity_seconds = int(SENSORE_LOG_ACTIVITY)
+        self.utcnow_fn = datetime.utcnow
 
-        self.rooms_model = rooms_model or ClassRoomsModel(self.db)
-        self.motion_events_model = motion_events_model or ClassroomMotionEventsModel(self.db)
+        self.rooms_model = rooms_model
+        self.motion_events_model = motion_events_model
 
-        self.sensor_model = SensorsModel(self.db)
+        self.sensor_model = sensor_model
     # ---- ADT: public API (keep names) ----
 
     def getRoomsAvailable(self):

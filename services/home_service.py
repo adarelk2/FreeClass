@@ -1,14 +1,6 @@
 # services/home_service.py
 from __future__ import annotations
 
-from core.database import db as default_db
-from models.classroom_motion_events_model import ClassroomMotionEventsModel
-from models.class_rooms_model import ClassRoomsModel
-from models.building_model import BuildingModel
-from services.building_service import BuildingService
-from services.rooms_service import RoomsService
-
-
 class HomeService:
     """
     Thin orchestration service for the /home screen only.
@@ -20,11 +12,13 @@ class HomeService:
       - available now
     """
 
-    def __init__(self, db_instance=None, building_service=None, rooms_service=None):
-        self.db = db_instance or default_db
-        self.building_service = building_service or BuildingService(self.db)
-        self.rooms_service = rooms_service or RoomsService(self.db)
-
+    def __init__(self, db_instance=None, building_service=None, rooms_service=None ,building_model = None ,class_room_model = None ,class_room_motion_events_model = None):
+        self.db = db_instance
+        self.building_service = building_service
+        self.rooms_service = rooms_service
+        self.building_model = building_model
+        self.class_room_model = class_room_model
+        self.class_room_motion_events_model =class_room_motion_events_model
     # -------------------------
     # helpers
     # -------------------------
@@ -78,15 +72,11 @@ class HomeService:
 
         batch_limit = max(20, limit_int * 10)
 
-        rooms_model = ClassRoomsModel(self.db)
-        builind_model = BuildingModel(self.db)
-
-        motion_model = ClassroomMotionEventsModel(self.db)
-        events = motion_model.filter(order_by="event_time DESC", limit=batch_limit)
+        events = self.class_room_motion_events_model.filter(order_by="event_time DESC", limit=batch_limit)
 
         # Lookups
-        rooms = rooms_model.filter()
-        buildings = builind_model.filter()
+        rooms = self.class_room_model.filter()
+        buildings = self.building_model.filter()
 
         rooms_by_id = {}
         for r in rooms:

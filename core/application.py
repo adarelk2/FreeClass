@@ -9,7 +9,7 @@ from flask import render_template, abort, Response, jsonify
 from werkzeug.wrappers import Request
 
 from core.controller_loader import ControllerLoader
-
+from container import AppContainer
 
 @dataclass
 class AppCall:
@@ -25,12 +25,13 @@ class Application:
 
     def handle(self, request: Request, controller_from_path: str) -> Response:
         errors: list[str] = []
+        
         call = self._parse_request(request, controller_from_path)
         if not self._is_valid_request(call, errors):
             return render_template("error.html", errors=errors), 400
 
         try:
-            controller = self.controller_loader.get_controller(call.controller_name)
+            controller = self.controller_loader.get_controller(call.controller_name, AppContainer())
 
             method = getattr(controller, call.method_name, None)
             if not callable(method):
