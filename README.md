@@ -126,6 +126,4 @@ This project tackles real engineering challenges:
 
 ---
 
-## Contributors
 
-Adar Elkabetz
