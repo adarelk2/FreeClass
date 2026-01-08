@@ -128,4 +128,4 @@ This project tackles real engineering challenges:
 
 ## Contributors
 
-Adar Elkabetz • Imad Nama • Yosef Nama • Suhail Fadila
+Adar Elkabetz • Imad Nama • Yosef Nama
