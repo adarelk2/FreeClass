@@ -1,7 +1,7 @@
 # models/classrooms_model.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
-from core.mysql import MySQL
+from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
 
 class ClassRoomsModel(ModelBase):
@@ -33,6 +33,9 @@ class ClassRoomsModel(ModelBase):
 
 
     def get_by_id(self, classroom_id: int) -> Optional[Dict[str, Any]]:
+        if not isinstance(classroom_id, int):
+            raise TypeError(f"classroom_id must be int, got {type(classroom_id).__name__}")
+        
         rows = self.db.select(self.TABLE, {"id": classroom_id})
         return rows[0] if rows else None
 

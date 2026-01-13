@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from core.mock_json_db import MockJSONDB
+from core.infrastructure.mock_json_db import MockJSONDB
 
 # מודלים ושירותים
 from models.building_model import BuildingModel
@@ -13,7 +13,7 @@ from services.rooms_service import RoomsService
 from services.building_service import BuildingService
 from services.home_service import HomeService
 
-class FreeClassTests(unittest.TestCase):
+class TestsFreeClass(unittest.TestCase):
 
     def setUp(self):
         self.db = MockJSONDB()
@@ -30,7 +30,7 @@ class FreeClassTests(unittest.TestCase):
 
     # US#1: Campus Vacancy Overview
     def test_us1_total_vacancy_counter(self):
-        self.rooms.create({"class_number": 101}) # יצירת חדר פנוי
+        self.rooms.create({"class_number": 101}) # יצירת חדר 
         available_ids = self.rs.getAvailableRoomIds()
         self.assertGreater(len(available_ids), 0, "צריך להיות לפחות חדר פנוי אחד")
 

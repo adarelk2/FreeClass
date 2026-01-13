@@ -1,0 +1,14 @@
+{
+  "buildings": [],
+  "classrooms": [],
+  "sensors": [],
+  "classroom_motion_events": [],
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "1234",
+      "role": "admin"
+    }
+  ]
+}
