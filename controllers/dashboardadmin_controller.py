@@ -28,6 +28,7 @@ class DashboardadminController(ControllerBase):
             "rooms_server": rooms,
             "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, self.sensor_model.filter()))
         }
+
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
@@ -36,10 +37,10 @@ class DashboardadminController(ControllerBase):
 
         if sensor:
             new_row = {"classroom_id":sensor['room_id'], "sensor_id": sensor['id']}
-            id = self.motion_events_model.create(new_row)
-            return {"json": {"flag":True, "id":id}}
+            self.motion_events_model.create(new_row)
+            return self.responseJSON("Done", True)
 
-        return {"json": {"flag":False}}
+        return self.responseJSON("Error - sensor not found", False)
 
     def createNewSensor(self, params):    
         validator = CreateValidation("sensor", params).create_validator()
@@ -55,9 +56,9 @@ class DashboardadminController(ControllerBase):
         if room:
             id = self.sensor_model.create({"room_id":room_id, "private_key" : private_key, "public_key" : params['public_key']})
             return self.responseJSON({"public_key": params['public_key'], "private_key": private_key, "id": id}, True)
-        
-        return self.responseJSON({}, False)
-    
+
+        return self.responseJSON("Error - room not found", False)
+
     def createNewRoom(self, params):
         validator = CreateValidation("room", params).create_validator()
         errors = validator.validate()
@@ -74,7 +75,7 @@ class DashboardadminController(ControllerBase):
             id = self.class_rooms_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
             return self.responseJSON({"id":id}, True)
 
-        return self.responseJSON({}, False)
+        return self.responseJSON("Error - building not found", False)
 
     def createNewBuilding(self, params):
         validator = CreateValidation("building", params).create_validator()
@@ -88,16 +89,16 @@ class DashboardadminController(ControllerBase):
 
         id = self.building_model.create({"building_name": building_name, "floors": floors, "color": color})
         if id:
-            return {"json": {"flag":True, "id":id}}
+            return self.responseJSON({"id":id}, True)   
 
-        return {"json": {"flag":False}}
+        return self.responseJSON("Error", False)
 
-    def authToken(self, params):
+    def authToken(self, params):##For future use
         context = {}
         flag = False
 
         try:
-            token = jwt.decode(
+            jwt.decode(
                 params["token"],
                 SECRET_JWT_KEY,
                 algorithms=["HS256"]
@@ -114,18 +115,16 @@ class DashboardadminController(ControllerBase):
         return self.responseJSON(context, flag)
 
     def deleteClassRoom(self, params):
-        context = {}
-        flag = False
         class_id = params["class_id"]
         if self.rooms_service.delete_room_by_id(class_id):
-            flag = True
-        return self.responseJSON(context, flag)
+            return self.responseJSON("Done", True)
+
+        return self.responseJSON("Error - Operation failed", False)
 
 
     def deleteBuilding(self, params):
-        context = {}
-        flag = False
         building_id = params["building_id"]
         if self.building_service.delete_building_by_id(building_id):
-            flag = True
-        return self.responseJSON(context, flag)
+            return self.responseJSON("Done", True)
+
+        return self.responseJSON("Error - building not found", False)

@@ -13,18 +13,15 @@ class AdminloginController(ControllerBase):
         return self.responseHTML(context, "admin-login")
 
     def checkLogin(self,params):
-        context = {}
-        flag = False
         users_model = self.users_model
-        print(users_model)
         username = params["username"]
         password = params["password"]
 
         user = users_model.filter({"username" : username, "password": password})
         if len(user)>0:
-
             encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user[0]['username'], "role":user[0]['role']}, SECRET_JWT_KEY, algorithm="HS256")
+            context = {}
             context['token'] = encoded
-            flag = True
-        return self.responseJSON(context, flag)
+            return self.responseJSON(context, True)
 
+        return self.responseJSON("Error - user not found", False)
