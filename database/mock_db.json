@@ -1,8 +1,49 @@
 {
-  "buildings": [],
-  "classrooms": [],
+  "buildings": [
+    {
+      "id": 1,
+      "building_name": "Legacy",
+      "floors": 1,
+      "color": "red"
+    }
+  ],
+  "classrooms": [
+    {
+      "id": 1,
+      "id_building": 1,
+      "floor": 1,
+      "class_number": 102,
+      "category": 1
+    }
+  ],
   "sensors": [],
   "classroom_motion_events": [],
+  "classroom_categories":[
+  {
+    "id": 5,
+    "name": "חדר שקט",
+    "description": "חדר ללמידה שקטה או עבודה אישית",
+    "color": "#6c757d",
+    "created_at": "2025-12-26 01:10:11",
+    "updated_at": null
+  },
+  {
+    "id": 6,
+    "name": "כיתה",
+    "description": "כיתת לימוד רגילה",
+    "color": "#0d6efd",
+    "created_at": "2025-12-26 01:10:11",
+    "updated_at": null
+  },
+  {
+    "id": 7,
+    "name": "מעבדה",
+    "description": "מעבדה ללימוד מעשי ותרגול",
+    "color": "#198754",
+    "created_at": "2025-12-26 01:10:11",
+    "updated_at": null
+  }
+],
   "users": [
     {
       "id": 1,
@@ -10,5 +51,6 @@
       "password": "1234",
       "role": "admin"
     }
-  ]
+  ],
+  "classroom_categories": []
 }
