@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
+from core.interfaces.Room import Room
 
 class ClassRoomsModel(ModelBase):
     """
@@ -32,26 +33,26 @@ class ClassRoomsModel(ModelBase):
         return int(new_id)
 
 
-    def get_by_id(self, classroom_id: int) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, classroom_id: int) -> Room:
         if not isinstance(classroom_id, int):
             raise TypeError(f"classroom_id must be int, got {type(classroom_id).__name__}")
         
         rows = self.db.select(self.TABLE, {"id": classroom_id})
-        return rows[0] if rows else None
+        return Room(rows[0]['id'], rows[0]['id_building'], rows[0]['floor'], rows[0]['class_number']) if rows else None
 
 
-    def list_by_building(self, building_id: int) -> List[Dict[str, Any]]:
-        return self.db.select(self.TABLE, {"id_building": building_id})
+    def list_by_building(self, building_id: int) -> List[Room]:
+        rows = self.db.select(self.TABLE, {"id_building": building_id})
+        return [Room(row['id'], row['id_building'], row['floor'], row['class_number']) for row in rows]
 
-    def list_by_floor(self, building_id: int, floor: int) -> List[Dict[str, Any]]:
-        return self.db.select(
-            self.TABLE,
+    def list_by_floor(self, building_id: int, floor: int) -> List[Room]:
+        rows = self.db.select(self.TABLE,
             {
                 "id_building": building_id,
                 "floor": floor,
             },
         )
-
+        return [Room(row['id'], row['id_building'], row['floor'], row['class_number']) for row in rows]
 
     def update_by_id(self, classroom_id: int, fields: Dict[str, Any]) -> int:
         if not fields:
