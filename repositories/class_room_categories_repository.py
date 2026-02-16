@@ -1,10 +1,11 @@
-# models/classrooms_model.py
+# repositories/class_room_categories_repository.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
+from models.ClassRoomCategory import ClassRoomCategory
 
-class ClassRoomCategoriesModel(ModelBase):
+class ClassRoomCategoriesRepository(ModelBase):
     """
    
 +-------------+--------------+------+-----+-------------------+-----------------------------+
@@ -35,6 +36,16 @@ class ClassRoomCategoriesModel(ModelBase):
         return int(new_id)
 
 
-    def get_by_id(self, classroom_id: int) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, classroom_id: int) -> Optional[ClassRoomCategory]:
         rows = self.db.select(self.TABLE, {"id": classroom_id})
-        return rows[0] if rows else None
+        if rows:
+            row = rows[0]
+            return ClassRoomCategory(
+                row['id'],
+                row['name'],
+                row['description'],
+                row['color'],
+                row['created_at'],
+                row['updated_at']
+            )
+        return None

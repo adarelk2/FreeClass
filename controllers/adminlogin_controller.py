@@ -5,21 +5,20 @@ import time
 
 class AdminloginController(ControllerBase):
     def __init__(self, _container):
-        self.users_model = _container.users_model
+        self.users_service = _container.users_service
 
     def print(self, params):
         context = {}
 
         return self.responseHTML(context, "admin-login")
 
-    def checkLogin(self,params):
-        users_model = self.users_model
+    def checkLogin(self, params):
         username = params["username"]
         password = params["password"]
 
-        user = users_model.filter({"username" : username, "password": password})
-        if len(user)>0:
-            encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user[0]['username'], "role":user[0]['role']}, SECRET_JWT_KEY, algorithm="HS256")
+        user = self.users_service.authenticate(username, password)
+        if user:
+            encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user['username'], "role":user['role']}, SECRET_JWT_KEY, algorithm="HS256")
             context = {}
             context['token'] = encoded
             return self.responseJSON(context, True)

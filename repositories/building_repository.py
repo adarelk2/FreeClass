@@ -1,12 +1,13 @@
-# models/building_model.py
+# repositories/building_repository.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
+from models.Building import Building
 
-class BuildingModel(ModelBase):
+class BuildingRepository(ModelBase):
     """
-    Buildings table model בלבד.
+    Buildings table repository.
    
 
 +---------------+--------------+------+-----+---------+----------------+
@@ -35,15 +36,15 @@ class BuildingModel(ModelBase):
         return int(new_id)
 
 
-    def get_by_id(self, building_id: int) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, building_id: int) -> Optional[Building]:
         rows = self.db.select(self.TABLE, {"id": building_id})
-        return rows[0] if rows else None
+        if rows:
+            row = rows[0]
+            return Building(row['id'], row['building_name'], row['floors'], row['color'])
+        return None
 
 
     def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
         if not fields:
             raise ValueError("update_by_id() requires at least one field")
         return self.db.update(self.TABLE, filter=fields, where={"id": building_id})
-
-    def delete_build_by_id(self, building_id):
-        return self.db.delete(self.TABLE, {"id": building_id})

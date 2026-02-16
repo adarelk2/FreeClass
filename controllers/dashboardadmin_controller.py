@@ -3,41 +3,34 @@ from core.config import (SECRET_JWT_KEY)
 from core.validations.CreateValidation import CreateValidation
 import jwt
 import time
-# app/controllers/home_controller.py
+
 class DashboardadminController(ControllerBase):
     def __init__(self, _container):
-        #models
-        self.sensor_model = _container.sensors_model
-        self.class_rooms_model = _container.class_rooms_model
-        self.class_room_categories_model = _container.categories_model
-        self.motion_events_model = _container.motion_events_model
-        self.building_model = _container.building_model
-
-        ##Services
+        # Services only - no direct model access
         self.home_service = _container.home_service
         self.rooms_service = _container.rooms_service
         self.building_service = _container.building_service
+        self.sensors_service = _container.sensors_service
+        self.categories_service = _container.categories_service
+        self.motion_events_service = _container.motion_events_service
 
     def print(self, params):
-        categories = self.class_room_categories_model.filter()
-        rooms = self.class_rooms_model.filter()
+        categories = self.categories_service.list_all()
+        rooms = self.rooms_service.list_all()
         buildings = self.home_service.getHomeBuildingsCards()
         context = {
             "buildings_server": buildings,
             "classRoom_categories_server" : categories,
             "rooms_server": rooms,
-            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, self.sensor_model.filter()))
+            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, self.sensors_service.list_all()))
         }
 
         return self.responseHTML(context, "admin-dashboard")
 
     def createNewActivty(self, params):
         sensor_private_key = params.get("private_key", "private_key")
-        sensor = self.sensor_model.get_by_privateKey(sensor_private_key)
-
-        if sensor:
-            new_row = {"classroom_id":sensor['room_id'], "sensor_id": sensor['id']}
-            self.motion_events_model.create(new_row)
+        
+        if self.motion_events_service.log_sensor_activity(sensor_private_key):
             return self.responseJSON("Done", True)
 
         return self.responseJSON("Error - sensor not found", False)
@@ -52,10 +45,9 @@ class DashboardadminController(ControllerBase):
 
         room_id = params.get("room_id", "")
 
-        room = self.class_rooms_model.get_by_id(room_id)
-        if room:
-            id = self.sensor_model.create({"room_id":room_id, "private_key" : private_key, "public_key" : params['public_key']})
-            return self.responseJSON({"public_key": params['public_key'], "private_key": private_key, "id": id}, True)
+        sensor_id = self.sensors_service.create_sensor(room_id, private_key, params['public_key'])
+        if sensor_id:
+            return self.responseJSON({"public_key": params['public_key'], "private_key": private_key, "id": sensor_id}, True)
 
         return self.responseJSON("Error - room not found", False)
 
@@ -64,16 +56,16 @@ class DashboardadminController(ControllerBase):
         errors = validator.validate()
         if errors:
            return self.responseJSON(errors, False)
-        #make auth for admin important!
+        
         building_id = params.get("building_id", "")
         floor = params.get("floor", 0)
         class_number = params.get("class_number", 0)
         category_id = params.get("category_id", 0)
 
-        building = self.building_model.get_by_id(building_id)
+        building = self.building_service.get_building_by_id(building_id)
         if building:
-            id = self.class_rooms_model.create({"id_building":building_id, "floor":floor, "class_number": class_number, "category": category_id})
-            return self.responseJSON({"id":id}, True)
+            room_id = self.rooms_service.create_room(building_id, floor, class_number, category_id)
+            return self.responseJSON({"id": room_id}, True)
 
         return self.responseJSON("Error - building not found", False)
 
@@ -82,14 +74,14 @@ class DashboardadminController(ControllerBase):
         errors = validator.validate()
         if errors:
            return self.responseJSON(errors, False)
-        #make auth for admin important!
+        
         building_name = params.get("building_name", "")
-        floors= params.get("floors", 0)
-        color= params.get("color", "#000")
+        floors = params.get("floors", 0)
+        color = params.get("color", "#000")
 
-        id = self.building_model.create({"building_name": building_name, "floors": floors, "color": color})
-        if id:
-            return self.responseJSON({"id":id}, True)   
+        building_id = self.building_service.create_building(building_name, floors, color)
+        if building_id:
+            return self.responseJSON({"id": building_id}, True)   
 
         return self.responseJSON("Error", False)
 
