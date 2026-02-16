@@ -1,5 +1,12 @@
 # services/building_service.py
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
+from core.infrastructure.mysql import MySQL
+from repositories.building_repository import BuildingRepository
+from repositories.classrooms_repository import ClassroomsRepository
+
+if TYPE_CHECKING:
+    from services.rooms_service import RoomsService
 
 class BuildingService:
     """
@@ -15,7 +22,13 @@ class BuildingService:
     - Public API is intentionally small and reusable.
     """
 
-    def __init__(self, db_instance=None, building_model=None, classrooms_model=None, rooms_service=None):
+    def __init__(
+        self,
+        db_instance: Optional[MySQL] = None,
+        building_model: Optional[BuildingRepository] = None,
+        classrooms_model: Optional[ClassroomsRepository] = None,
+        rooms_service: Optional[RoomsService] = None,
+    ):
         self.db = db_instance
         self.building_model = building_model
         self.classrooms_model = classrooms_model
@@ -100,17 +113,59 @@ class BuildingService:
 
         return self._attach_rooms_to_buildings(buildings, rooms, include_availability, available_ids)
 
-    def delete_building_by_id(self, building_id):
-        check_building = self.building_model.get_by_id(building_id)
-        if check_building == None:
+    def delete_building_by_id(self, building_id: int) -> bool:
+        """
+        Delete a building and all related data (classrooms, sensors, motion events) in correct order.
+        Uses bulk deletes for efficiency (4 queries instead of N*3).
+        
+        Returns True if building existed and was deleted, False otherwise
+        """
+        if not isinstance(building_id, int):
+            raise TypeError(f"building_id must be int, got {type(building_id).__name__}")
+        
+        if building_id <= 0:
+            raise ValueError("building_id must be positive")
+        
+        # Check if building exists
+        check = self.building_model.get_by_id(building_id)
+        if check is None:
             return False
-        else:
-            rooms =self.classrooms_model.filter({"id_building": building_id})
-            for room in rooms:
-                self.rooms_service.delete_room_by_id(room['id'])
+        
+        # Delete in order (respecting foreign key constraints)
+        # 1. Delete all motion events for rooms in this building
+        self.rooms_service.motion_events_model.delete_events_by_building_id(building_id)
+        
+        # 2. Delete all sensors for rooms in this building
+        self.rooms_service.sensor_model.delete_sensors_by_building_id(building_id)
+        
+        # 3. Delete all classrooms in this building
+        self.classrooms_model.delete_rooms_by_building_id(building_id)
+        
+        # 4. Delete the building itself
+        self.building_model.delete_building_by_id(building_id)
+        
+        return True
 
-            self.building_model.delete_build_by_id(building_id)
-            return True
+    def get_building_by_id(self, building_id: int) -> Optional[dict]:
+        """Get building by ID"""
+        return self.building_model.get_by_id(building_id)
+
+    def create_building(self, building_name: str, floors: int, color: str = "#000") -> Optional[int]:
+        """
+        Create a new building.
+        
+        Returns building ID if successful.
+        """
+        if not building_name:
+            raise ValueError("building_name is required")
+        
+        building_id = self.building_model.create({
+            "building_name": building_name,
+            "floors": floors,
+            "color": color,
+        })
+        
+        return building_id
 
 
 
