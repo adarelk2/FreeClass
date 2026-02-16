@@ -125,8 +125,10 @@
         const result = await response.json(); // ✅ JSON
 
         if (result.flag === true) {
-          localStorage.setItem("token_auth", result.msg.token);
-          window.location.href = 'dashboardAdmin';
+          const token = result.msg.token;
+          localStorage.setItem("token_auth", token);
+          // Redirect to dashboardAdmin with token in URL params
+          window.location.href = `dashboardAdmin?token=${encodeURIComponent(token)}`;
         } else {
           showError(result.msg || 'שם משתמש או סיסמה שגויים');
         }

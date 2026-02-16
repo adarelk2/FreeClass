@@ -17,6 +17,14 @@ from models.users_model import UsersModel
 from services.rooms_service import RoomsService
 from services.building_service import BuildingService
 from services.home_service import HomeService
+<<<<<<< Updated upstream
+=======
+from services.users_service import UsersService
+from services.sensors_service import SensorsService
+from services.categories_service import CategoriesService
+from services.motion_events_service import MotionEventsService
+from services.permission_service import PermissionService
+>>>>>>> Stashed changes
 
 
 class AppContainer:
@@ -42,6 +50,14 @@ class AppContainer:
         self._rooms_service: Optional[RoomsService] = None
         self._building_service: Optional[BuildingService] = None
         self._home_service: Optional[HomeService] = None
+<<<<<<< Updated upstream
+=======
+        self._users_service: Optional[UsersService] = None
+        self._sensors_service: Optional[SensorsService] = None
+        self._categories_service: Optional[CategoriesService] = None
+        self._motion_events_service: Optional[MotionEventsService] = None
+        self._permission_service: Optional["PermissionService"] = None
+>>>>>>> Stashed changes
 
     # --------------------
     # MODELS
@@ -119,4 +135,30 @@ class AppContainer:
                 self.motion_events_model
             )
         return self._home_service
+
+    @property
+    def permission_service(self) -> "PermissionService":
+        if self._permission_service is None:
+            # Prefer DB-backed provider; fall back to local in case of missing table/errors
+            try:
+                from core.infrastructure.permission_manager import (
+                    PermissionDB,
+                    PermissionLocal,
+                )
+
+                provider = PermissionDB(self._db)
+                # quick probe to ensure provider works (may raise if table missing)
+                try:
+                    provider.get_permissions("home")
+                except Exception:
+                    provider = PermissionLocal()
+
+                self._permission_service = PermissionService(provider)
+            except Exception:
+                # ultimate fallback
+                from core.infrastructure.permission_manager import PermissionLocal
+
+                self._permission_service = PermissionService(PermissionLocal())
+
+        return self._permission_service
 

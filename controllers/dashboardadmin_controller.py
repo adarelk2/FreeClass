@@ -42,7 +42,7 @@ class DashboardadminController(ControllerBase):
 
         return self.responseJSON("Error - sensor not found", False)
 
-    def createNewSensor(self, params):    
+    def createNewSensor(self, params):
         validator = CreateValidation("sensor", params).create_validator()
         errors = validator.validate()
         if errors:
@@ -128,3 +128,20 @@ class DashboardadminController(ControllerBase):
             return self.responseJSON("Done", True)
 
         return self.responseJSON("Error - building not found", False)
+
+    def deleteSensor(self, params):
+        sensor_id = params.get("sensor_id")
+        if not sensor_id:
+            return self.responseJSON("Error - missing sensor_id", False)
+
+        try:
+            sid = int(sensor_id)
+        except (TypeError, ValueError):
+            return self.responseJSON("Error - invalid sensor_id", False)
+
+        # Use repository delete through the service's repository
+        # Delegate deletion to service layer
+        if self.sensors_service.delete_sensor(sid):
+            return self.responseJSON("Done", True)
+
+        return self.responseJSON("Error - sensor not found", False)

@@ -17,9 +17,21 @@ class AdminloginController(ControllerBase):
         username = params["username"]
         password = params["password"]
 
+<<<<<<< Updated upstream
         user = users_model.filter({"username" : username, "password": password})
         if len(user)>0:
             encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user[0]['username'], "role":user[0]['role']}, SECRET_JWT_KEY, algorithm="HS256")
+=======
+        user = self.users_service.authenticate(username, password)
+        if user:
+            # Include user id in JWT payload for User object reconstruction
+            encoded = jwt.encode({
+                "exp": int(time.time()) + 3600,
+                "username": user['username'],
+                "role": user['role'],
+                "id": user.get('id')
+            }, SECRET_JWT_KEY, algorithm="HS256")
+>>>>>>> Stashed changes
             context = {}
             context['token'] = encoded
             return self.responseJSON(context, True)
