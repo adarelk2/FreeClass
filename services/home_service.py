@@ -1,5 +1,14 @@
 # services/home_service.py
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
+from core.infrastructure.mysql import MySQL
+from repositories.building_repository import BuildingRepository
+from repositories.classrooms_repository import ClassroomsRepository
+from repositories.classroom_motion_events_repository import ClassroomMotionEventsRepository
+
+if TYPE_CHECKING:
+    from services.building_service import BuildingService
+    from services.rooms_service import RoomsService
 
 class HomeService:
     """
@@ -12,7 +21,15 @@ class HomeService:
       - available now
     """
 
-    def __init__(self, db_instance=None, building_service=None, rooms_service=None ,building_model = None ,class_room_model = None ,class_room_motion_events_model = None):
+    def __init__(
+        self,
+        db_instance: Optional[MySQL] = None,
+        building_service: Optional[BuildingService] = None,
+        rooms_service: Optional[RoomsService] = None,
+        building_model: Optional[BuildingRepository] = None,
+        class_room_model: Optional[ClassroomsRepository] = None,
+        class_room_motion_events_model: Optional[ClassroomMotionEventsRepository] = None,
+    ):
         self.db = db_instance
         self.building_service = building_service
         self.rooms_service = rooms_service

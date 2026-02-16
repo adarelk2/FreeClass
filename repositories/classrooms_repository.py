@@ -1,11 +1,11 @@
-# models/classrooms_model.py
+# repositories/classrooms_repository.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
-from core.interfaces.Room import Room
+from models.Room import Room
 
-class ClassRoomsModel(ModelBase):
+class ClassroomsRepository(ModelBase):
     """
    
 +--------------+--------------+------+-----+---------+----------------+
@@ -66,7 +66,10 @@ class ClassRoomsModel(ModelBase):
 
 
 
-    def delete_room_by_id(self, classroom_id):
+    def delete_room_by_id(self, classroom_id: int) -> int:
+        """Delete room without cascade. Returns number of rows deleted."""
         return self.db.delete(self.TABLE,{"id": classroom_id})
 
-
+    def delete_rooms_by_building_id(self, building_id: int) -> int:
+        """Delete all rooms in a building (single query). Returns number of rows deleted."""
+        return self.db.delete(self.TABLE, {"id_building": building_id})

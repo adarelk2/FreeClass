@@ -5,7 +5,7 @@ from typing import Optional, Any, Dict, List, Tuple
 import re
 import mysql.connector
 from mysql.connector import MySQLConnection
-from core.interfaces.db import DB
+from core.db import DB
 
 class MySQL(DB):
     """
@@ -312,3 +312,37 @@ class MySQL(DB):
             commit=True,
         )
         return int(rowcount)
+
+    # ---------------------------------
+    # RAW QUERY
+    # ---------------------------------
+
+    def query(self, sql: str, params: tuple = ()) -> Any:
+        """
+        Execute raw SQL query (SELECT/INSERT/UPDATE/DELETE)
+        Returns fetchall() result for SELECT, or rowcount for mutations
+        """
+        if not sql or not isinstance(sql, str):
+            raise ValueError("query() requires valid SQL string")
+        
+        # Detect if this is a SELECT (needs fetch) or mutation (needs commit)
+        is_select = sql.strip().upper().startswith("SELECT")
+        
+        result = self._execute_with_retry(
+            sql,
+            tuple(params) if params else (),
+            dictionary=True,
+            fetch=is_select,
+            commit=not is_select,
+        )
+        
+        # If SELECT, result is the fetched rows; otherwise it's (rowcount, lastrowid)
+        if is_select:
+            return result if result else []
+        return int(result[0]) if result and result[0] else 0
+
+    def execute(self, sql: str, params: tuple = ()) -> Any:
+        """
+        Alias for query() - execute raw SQL query.
+        """
+        return self.query(sql, params)

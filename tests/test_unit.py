@@ -2,12 +2,12 @@ import unittest
 from datetime import datetime
 from core.infrastructure.mock_json_db import MockJSONDB
 
-# מודלים ושירותים
-from models.building_model import BuildingModel
-from models.class_rooms_model import ClassRoomsModel
-from models.classroom_motion_events_model import ClassroomMotionEventsModel
-from models.sensors_model import SensorsModel
-from models.users_model import UsersModel
+# repositories ושירותים
+from repositories.building_repository import BuildingRepository
+from repositories.classrooms_repository import ClassroomsRepository
+from repositories.classroom_motion_events_repository import ClassroomMotionEventsRepository
+from repositories.sensors_repository import SensorsRepository
+from repositories.users_repository import UsersRepository
 
 from services.rooms_service import RoomsService
 from services.building_service import BuildingService
@@ -18,11 +18,11 @@ class TestsFreeClass(unittest.TestCase):
     def setUp(self):
         self.db = MockJSONDB()
         # אתחול מהיר של כל השכבות
-        self.buildings = BuildingModel(self.db)
-        self.rooms = ClassRoomsModel(self.db)
-        self.events = ClassroomMotionEventsModel(self.db)
-        self.sensors = SensorsModel(self.db)
-        self.users = UsersModel(self.db)
+        self.buildings = BuildingRepository(self.db)
+        self.rooms = ClassroomsRepository(self.db)
+        self.events = ClassroomMotionEventsRepository(self.db)
+        self.sensors = SensorsRepository(self.db)
+        self.users = UsersRepository(self.db)
         
         self.rs = RoomsService(self.db, self.rooms, self.events, self.sensors)
         self.bs = BuildingService(self.db, self.buildings, self.rooms, self.rs)

@@ -1,12 +1,13 @@
-# models/sensors_model.py
+# repositories/sensors_repository.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
+from models.Sensor import Sensor
 
-class SensorsModel(ModelBase):
+class SensorsRepository(ModelBase):
     """
-    Sensors table model בלבד.
+    Sensors table repository.
 
     Expected schema:
 
@@ -39,21 +40,29 @@ class SensorsModel(ModelBase):
         return int(new_id)
 
     # ---------- Read ----------
-    def get_by_id(self, sensor_id: int) -> Optional[Dict[str, Any]]:
+    def get_by_id(self, sensor_id: int) -> Optional[Sensor]:
         rows = self.db.select(self.TABLE, {"id": sensor_id})
-        return rows[0] if rows else None
+        if rows:
+            row = rows[0]
+            return Sensor(row['id'], row['room_id'], row['private_key'], row['public_key'])
+        return None
 
-    def get_by_privateKey(self, private_key: str) -> Optional[Dict[str, Any]]:
+    def get_by_privateKey(self, private_key: str) -> Optional[Sensor]:
         if not private_key:
             raise ValueError("get_by_privateKey() requires private_key")
         rows = self.db.select(self.TABLE, {"private_key": private_key})
-        return rows[0] if rows else None
+        if rows:
+            row = rows[0]
+            return Sensor(row['id'], row['room_id'], row['private_key'], row['public_key'])
+        return None
 
-    def list_by_room_id(self, room_id: int) -> List[Dict[str, Any]]:
-        return self.db.select(self.TABLE, {"room_id": room_id}) or []
+    def list_by_room_id(self, room_id: int) -> List[Sensor]:
+        rows = self.db.select(self.TABLE, {"room_id": room_id}) or []
+        return [Sensor(row['id'], row['room_id'], row['private_key'], row['public_key']) for row in rows]
 
-    def list_all(self) -> List[Dict[str, Any]]:
-        return self.db.select(self.TABLE, {}) or []
+    def list_all(self) -> List[Sensor]:
+        rows = self.db.select(self.TABLE, {}) or []
+        return [Sensor(row['id'], row['room_id'], row['private_key'], row['public_key']) for row in rows]
 
     # ---------- Update ----------
     def update_by_id(self, sensor_id: int, fields: Dict[str, Any]) -> int:
@@ -82,3 +91,15 @@ class SensorsModel(ModelBase):
 
     def delete_sensor_by_room_id(self, classroom_id):
         return self.db.delete(self.TABLE,{"room_id": classroom_id})
+
+    def delete_sensors_by_building_id(self, building_id: int):
+        """
+        Delete all sensors for rooms in a building (single query via INNER JOIN).
+        Returns number of rows deleted.
+        """
+        query = """
+            DELETE s FROM sensors s
+            INNER JOIN classrooms c ON s.room_id = c.id
+            WHERE c.id_building = %s
+        """
+        return self.db.execute(query, (building_id,))

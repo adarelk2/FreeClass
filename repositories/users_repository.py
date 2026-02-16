@@ -1,13 +1,14 @@
-# models/building_model.py
+# repositories/users_repository.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from core.infrastructure.mysql import MySQL
 from core.model_base import ModelBase
+from models.User import User
 
 
-class UsersModel(ModelBase):
+class UsersRepository(ModelBase):
     """
-    users table model בלבד.
+    users table repository.
 
 
 +----------+-------------------------------+------+-----+---------+----------------+
@@ -35,9 +36,12 @@ class UsersModel(ModelBase):
             raise RuntimeError("Insert succeeded but no lastrowid was returned")
         return int(new_id)
 
-    def get_by_id(self, building_id: int) -> Optional[Dict[str, Any]]:
-        rows = self.db.select(self.TABLE, {"id": building_id})
-        return rows[0] if rows else None
+    def get_by_id(self, user_id: int) -> Optional[User]:
+        rows = self.db.select(self.TABLE, {"id": user_id})
+        if rows:
+            row = rows[0]
+            return User(row['username'], row['role'], row['id'])
+        return None
 
     def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
         if not fields:

@@ -1,30 +1,12 @@
-<<<<<<< Updated upstream
-from core.interfaces.user import UserInterface 
-from core.interfaces.permissions import Permissions
-
-class PermissionService: 
-    def __init__(self, model: Permissions):
-        self.model = model
-    
-    def get_permissions_by_controller(self, controller: str):
-        return self.model.get_permissions(controller, {})
-    
-    def has_permission(self, user: UserInterface, controller_name: str) -> bool:
-        allowed_roles = self.get_permissions_by_controller(controller_name)
-        
-        if not allowed_roles:
-            return True 
-            
-        return user.role in allowed_roles
-=======
-from __future__ import annotations
-
-import json
-from typing import Any, Dict, List, Optional
-
+from models.User import User
 from core.permissions import Permissions
 
->>>>>>> Stashed changes
+
+from __future__ import annotations
+import json
+from typing import Any, Dict, List, Optional
+from core.permissions import Permissions
+from models.User import User
 
 class PermissionLocal(Permissions):
     """In-memory permissions provider (useful for tests / small apps)."""
@@ -38,12 +20,6 @@ class PermissionLocal(Permissions):
     def create_new_permission(self, controller: str, roles: List[str]) -> None:
         self.permissions[controller] = roles
 
-<<<<<<< Updated upstream
-pdb = PermissionLocal()
-user1 = UserInterface("Yosef", "admin", 6)
-service = PermissionService(pdb)
-=======
->>>>>>> Stashed changes
 
 class PermissionDB(Permissions):
     """DB-backed permissions provider.
