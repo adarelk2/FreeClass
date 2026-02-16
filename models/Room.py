@@ -15,8 +15,12 @@ class Room:
             "class_number": self.class_number,
         }
     
+    def get(self, key: str, default=None):
+        """Dict-like get method for compatibility"""
+        return getattr(self, key, default)
+    
     def __str__(self) -> str:
         return f"Room(id={self.id}, id_building={self.id_building}, floor={self.floor}, class_number={self.class_number})"
     
     def __repr__(self) -> str:
-        return self.__str__()  
+        return self.__str__()

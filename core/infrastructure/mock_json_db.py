@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from copy import deepcopy
 
-from core.interfaces.db import DB
+from core.db import DB
 
 
 class MockJSONDB(DB):
@@ -141,3 +141,20 @@ class MockJSONDB(DB):
             self._save()
 
         return deleted
+
+    # ---------------------------------
+    # RAW QUERY (for compatibility)
+    # ---------------------------------
+
+    def query(self, sql: str, params: tuple = ()) -> Any:
+        """
+        Execute raw SQL query (not fully implemented for MockJSONDB).
+        For mock testing, use select/insert/update/delete instead.
+        """
+        raise NotImplementedError("MockJSONDB does not support raw SQL queries. Use select/insert/update/delete instead.")
+
+    def execute(self, sql: str, params: tuple = ()) -> Any:
+        """
+        Alias for query() - execute raw SQL query (not implemented for MockJSONDB).
+        """
+        return self.query(sql, params)

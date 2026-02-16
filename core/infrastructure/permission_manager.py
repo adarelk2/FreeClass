@@ -1,5 +1,5 @@
-from core.interfaces.user import UserInterface 
-from core.interfaces.permissions import Permissions
+from models.User import User
+from core.permissions import Permissions
 
 class PermissionService: 
     def __init__(self, model: Permissions):
@@ -8,7 +8,7 @@ class PermissionService:
     def get_permissions_by_controller(self, controller: str):
         return self.model.get_permissions(controller, {})
     
-    def has_permission(self, user: UserInterface, controller_name: str) -> bool:
+    def has_permission(self, user: User, controller_name: str) -> bool:
         allowed_roles = self.get_permissions_by_controller(controller_name)
         
         if not allowed_roles:
@@ -27,7 +27,7 @@ class PermissionLocal(Permissions):
         self.permissions[controller] = roles
 
 pdb = PermissionLocal()
-user1 = UserInterface("Yosef", "admin", 6)
+user1 = User("Yosef", "admin", 6)
 service = PermissionService(pdb)
 
 print(service.has_permission(user1, "dashboardadmin"))
