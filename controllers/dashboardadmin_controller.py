@@ -15,25 +15,20 @@ class DashboardadminController(ControllerBase):
         self.motion_events_service = _container.motion_events_service
 
     def print(self, params):
+        # Optimized: 4 queries instead of 8
+        # Skip availability calculation for admin dashboard
+        buildings_with_rooms = self.building_service.get_buildings_with_rooms(include_availability=False)
         categories = self.categories_service.list_all()
-        rooms = self.rooms_service.list_all()
-        buildings = self.home_service.getHomeBuildingsCards()
+        sensors = self.sensors_service.list_all()
+        
         context = {
-            "buildings_server": buildings,
-            "classRoom_categories_server" : categories,
-            "rooms_server": rooms,
-            "sensors_server": list(map(lambda s: {"id": s['id'], "room_id" : s['room_id'], 'public_key': s['public_key']}, self.sensors_service.list_all()))
+            "buildings_server": buildings_with_rooms,
+            "classRoom_categories_server": categories,
+            "rooms_server": [r for building in buildings_with_rooms for r in building.get("rooms", [])],
+            "sensors_server": list(map(lambda s: {"id": s.id, "room_id": s.room_id, "public_key": s.public_key}, sensors))
         }
 
         return self.responseHTML(context, "admin-dashboard")
-
-    def createNewActivty(self, params):
-        sensor_private_key = params.get("private_key", "private_key")
-        
-        if self.motion_events_service.log_sensor_activity(sensor_private_key):
-            return self.responseJSON("Done", True)
-
-        return self.responseJSON("Error - sensor not found", False)
 
     def createNewSensor(self, params):
         validator = CreateValidation("sensor", params).create_validator()

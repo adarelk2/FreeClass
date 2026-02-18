@@ -37,7 +37,7 @@ class UsersRepository(ModelBase):
         return int(new_id)
 
     def get_by_id(self, user_id: int) -> Optional[User]:
-        rows = self.db.select(self.TABLE, {"id": user_id})
+        rows = self.db.query("SELECT * FROM users WHERE id = %s", (user_id,))
         if rows:
             row = rows[0]
             return User(row['username'], row['role'], row['id'])
@@ -46,4 +46,4 @@ class UsersRepository(ModelBase):
     def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
         if not fields:
             raise ValueError("update_by_id() requires at least one field")
-        return self.db.update(self.TABLE, filter=fields, where={"id": building_id})
+        return self.db.update(self.TABLE, data=fields, where={"id": building_id})

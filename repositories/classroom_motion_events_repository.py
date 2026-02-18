@@ -37,7 +37,7 @@ class ClassroomMotionEventsRepository(ModelBase):
         return int(new_id)
 
     def get_by_id(self, event_id: int) -> Optional[ClassroomMotionEvent]:
-        rows = self.db.select(self.TABLE, {"id": event_id})
+        rows = self.db.query("SELECT * FROM classroom_motion_events WHERE id = %s", (event_id,))
         if rows:
             row = rows[0]
             return ClassroomMotionEvent(

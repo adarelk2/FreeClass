@@ -37,7 +37,7 @@ class BuildingRepository(ModelBase):
 
 
     def get_by_id(self, building_id: int) -> Optional[Building]:
-        rows = self.db.select(self.TABLE, {"id": building_id})
+        rows = self.db.query("SELECT * FROM buildings WHERE id = %s", (building_id,))
         if rows:
             row = rows[0]
             return Building(row['id'], row['building_name'], row['floors'], row['color'])
@@ -47,4 +47,4 @@ class BuildingRepository(ModelBase):
     def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
         if not fields:
             raise ValueError("update_by_id() requires at least one field")
-        return self.db.update(self.TABLE, filter=fields, where={"id": building_id})
+        return self.db.update(self.TABLE, data=fields, where={"id": building_id})

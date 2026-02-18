@@ -434,7 +434,7 @@
 
     function getBuildingNameById(id_building) {
       const b = buildings.find(x => Number(x.id) === Number(id_building));
-      return b ? (b.name ?? '') : `בניין #${id_building}`;
+      return b ? (b.building_name ?? '') : `בניין #${id_building}`;
     }
 
     function getRoomById(roomId) {
@@ -493,11 +493,14 @@
     // -------------------- Buildings Table --------------------
     function renderBuildingsTable() {
       const tbody = document.getElementById('buildingsTbody');
-
-      tbody.innerHTML = buildings.map(b => `
+      console.log(buildings);
+      
+      tbody.innerHTML = buildings.map(b => {
+        const roomCount = Array.isArray(b.rooms) ? b.rooms.length : 0;
+        return `
         <tr>
-          <td class="py-3 font-medium text-slate-800">${escapeHtml(b.name ?? '')}</td>
-          <td class="py-3 text-slate-500">${b.totalRooms ?? '-'}</td>
+          <td class="py-3 font-medium text-slate-800">${escapeHtml(b.building_name ?? '')}</td>
+          <td class="py-3 text-slate-500">${roomCount}</td>
           <td class="py-3 text-slate-500">${b.floors ?? '-'}</td>
           <td class="py-3">
             <div class="inline-flex items-center gap-2">
@@ -512,7 +515,8 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
       lucide.createIcons();
     }
@@ -564,7 +568,8 @@
         if (af !== 0) return af;
         return Number(a.class_number) - Number(b.class_number);
       });
-
+      console.log(sorted);
+      
       tbody.innerHTML = sorted.map(r => `
         <tr>
           <td class="py-3 font-medium text-slate-800">${escapeHtml(getBuildingNameById(r.id_building))}</td>
@@ -729,7 +734,7 @@
         const result = await apiCall('createNewBuilding', { building_name: name, color, floors });
         if (!result.flag) return showBuildingFormError('השרת סירב ליצור את הבניין');
 
-        buildings.push({ id: result.id, name, floors, color, totalRooms: 0 });
+        buildings.push({ id: result.id, building_name: name, floors, color, rooms: [] });
         renderBuildingsTable();
         renderRoomBuildingsSelect();
         closeBuildingModal();
@@ -760,7 +765,7 @@
       roomNoBuildingsHint.classList.toggle('hidden', hasBuildings);
 
       roomBuildingSelect.innerHTML = (hasBuildings ? buildings : []).map(b => `
-        <option value="${b.id}">${escapeHtml(b.name ?? '')}</option>
+        <option value="${b.id}">${escapeHtml(b.building_name ?? '')}</option>
       `).join('');
 
       roomBuildingSelect.disabled = !hasBuildings;

@@ -59,14 +59,17 @@ class BuildingService:
         if not rooms:
             return []
 
-        if not include_availability:
-            return [dict(r) for r in rooms]
-
+        # Always set is_available flag for template consistency
         enriched = []
         for r in rooms:
             r_copy = dict(r)
             rid = self._to_int(r_copy.get("id"))
-            r_copy["is_available"] = (rid in available_ids) if rid is not None else False
+            # Mark as available if in available_ids, or default to True if no availability info requested
+            if include_availability:
+                r_copy["is_available"] = (rid in available_ids) if rid is not None else False
+            else:
+                # When availability not requested, default rooms to available
+                r_copy["is_available"] = True
             enriched.append(r_copy)
         return enriched
 
@@ -78,7 +81,7 @@ class BuildingService:
         if not ids:
             return []
 
-        all_buildings = self.building_model.filter()
+        all_buildings = self.building_model.get_all()
         return [b for b in all_buildings if self._to_int(b.get("id")) in ids]
 
     def _attach_rooms_to_buildings(self, buildings, rooms, include_availability, available_ids):
@@ -104,11 +107,11 @@ class BuildingService:
             building_ids = None
 
         if building_ids is None:
-            buildings = self.building_model.filter()
+            buildings = self.building_model.get_all()
         else:
             buildings = self.get_buildings_by_ids(building_ids)
 
-        rooms = self.classrooms_model.filter()
+        rooms = self.classrooms_model.get_all()
         available_ids = self.rooms_service.getAvailableRoomIds() if include_availability else []
 
         return self._attach_rooms_to_buildings(buildings, rooms, include_availability, available_ids)

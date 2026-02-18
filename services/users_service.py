@@ -31,7 +31,7 @@ class UsersService:
         if not username or not password:
             return None
         
-        users = self.users_model.filter({"username": username, "password": password})
+        users = self.users_model.get_with_filter({"username": username, "password": password})
         
         if users and len(users) > 0:
             return users[0]
@@ -46,4 +46,4 @@ class UsersService:
         """Get all users or filter by conditions"""
         if query is None:
             query = {}
-        return self.users_model.filter(query)
+        return self.users_model.get_with_filter(query)

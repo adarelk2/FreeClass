@@ -6,10 +6,13 @@ class HomeController(ControllerBase):
         self.home_service = _container.home_service
         
     def print(self, params):
-
-        buildings = self.home_service.getHomeBuildingsCards()
-        recent_spaces = self.home_service.getHomeRecentSpaces(limit=10)
-        available_now = self.home_service.getHomeAvailableNow(limit=6)
+        # Fetch all data once to avoid duplicate queries
+        cached_data = self.home_service._prepare_home_data()
+        
+        # Use cached data for all three methods
+        buildings = self.home_service.getHomeBuildingsCards(cached_data=cached_data)
+        recent_spaces = self.home_service.getHomeRecentSpaces(limit=10, cached_data=cached_data)
+        available_now = self.home_service.getHomeAvailableNow(limit=6, cached_data=cached_data)
 
         context = {
             "page": "home",

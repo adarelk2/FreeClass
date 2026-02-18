@@ -100,11 +100,12 @@ class Application:
             
             if allowed_roles and not user:
                 # Controller requires permission but no valid user
-                return jsonify({"msg": "Access Denied: Authentication required", "flag": False}), 403
-            
+                from flask import redirect
+                return redirect('/adminlogin')
+
             if user and allowed_roles and not permission_service.has_permission(user, call.controller_name):
                 # User authenticated but doesn't have required role
-                return jsonify({"msg": "Access Denied: Insufficient permissions", "flag": False}), 403
+                return render_template('error.html', errors=["You do not have permission to access this page."]), 404
             
             # Add user to params if authenticated
             if user:

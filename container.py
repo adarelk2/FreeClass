@@ -5,27 +5,24 @@ from typing import Optional
 # db
 from core.create_database import db
 
-# models
-from models.building_model import BuildingModel
-from models.class_room_categories import ClassRoomCategoriesModel
-from models.class_rooms_model import ClassRoomsModel
-from models.classroom_motion_events_model import ClassroomMotionEventsModel
-from models.sensors_model import SensorsModel
-from models.users_model import UsersModel
+# repositories
+from repositories.building_repository import BuildingRepository
+from repositories.class_room_categories_repository import ClassRoomCategoriesRepository
+from repositories.classrooms_repository import ClassroomsRepository
+from repositories.classroom_motion_events_repository import ClassroomMotionEventsRepository
+from repositories.sensors_repository import SensorsRepository
+from repositories.users_repository import UsersRepository
+
 
 # services
 from services.rooms_service import RoomsService
 from services.building_service import BuildingService
 from services.home_service import HomeService
-<<<<<<< Updated upstream
-=======
 from services.users_service import UsersService
 from services.sensors_service import SensorsService
 from services.categories_service import CategoriesService
 from services.motion_events_service import MotionEventsService
 from services.permission_service import PermissionService
->>>>>>> Stashed changes
-
 
 class AppContainer:
     """
@@ -38,64 +35,61 @@ class AppContainer:
     def __init__(self, database=db) -> None:
         self._db = database
 
-        # models cache
-        self._building_model: Optional[BuildingModel] = None
-        self._categories_model: Optional[ClassRoomCategoriesModel] = None
-        self._class_rooms_model: Optional[ClassRoomsModel] = None
-        self._motion_events_model: Optional[ClassroomMotionEventsModel] = None
-        self._sensors_model: Optional[SensorsModel] = None
-        self._users_model: Optional[UsersModel] = None
+        # repositories cache
+        self._building_model: Optional[BuildingRepository] = None
+        self._categories_model: Optional[ClassRoomCategoriesRepository] = None
+        self._class_rooms_model: Optional[ClassroomsRepository] = None
+        self._motion_events_model: Optional[ClassroomMotionEventsRepository] = None
+        self._sensors_model: Optional[SensorsRepository] = None
+        self._users_model: Optional[UsersRepository] = None
 
         # services cache
-        self._rooms_service: Optional[RoomsService] = None
-        self._building_service: Optional[BuildingService] = None
-        self._home_service: Optional[HomeService] = None
-<<<<<<< Updated upstream
-=======
-        self._users_service: Optional[UsersService] = None
-        self._sensors_service: Optional[SensorsService] = None
-        self._categories_service: Optional[CategoriesService] = None
-        self._motion_events_service: Optional[MotionEventsService] = None
-        self._permission_service: Optional["PermissionService"] = None
->>>>>>> Stashed changes
+        self._rooms_service = None
+        self._building_service = None
+        self._home_service = None
+        self._users_service = None
+        self._sensors_service = None
+        self._categories_service = None
+        self._motion_events_service = None
+        self._permission_service = None
 
     # --------------------
-    # MODELS
+    # REPOSITORIES
     # --------------------
     @property
-    def building_model(self) -> BuildingModel:
+    def building_model(self) -> BuildingRepository:
         if self._building_model is None:
-            self._building_model = BuildingModel(self._db)
+            self._building_model = BuildingRepository(self._db)
         return self._building_model
 
     @property
-    def categories_model(self) -> ClassRoomCategoriesModel:
+    def categories_model(self) -> ClassRoomCategoriesRepository:
         if self._categories_model is None:
-            self._categories_model = ClassRoomCategoriesModel(self._db)
+            self._categories_model = ClassRoomCategoriesRepository(self._db)
         return self._categories_model
 
     @property
-    def class_rooms_model(self) -> ClassRoomsModel:
+    def class_rooms_model(self) -> ClassroomsRepository:
         if self._class_rooms_model is None:
-            self._class_rooms_model = ClassRoomsModel(self._db)
+            self._class_rooms_model = ClassroomsRepository(self._db)
         return self._class_rooms_model
 
     @property
-    def motion_events_model(self) -> ClassroomMotionEventsModel:
+    def motion_events_model(self) -> ClassroomMotionEventsRepository:
         if self._motion_events_model is None:
-            self._motion_events_model = ClassroomMotionEventsModel(self._db)
+            self._motion_events_model = ClassroomMotionEventsRepository(self._db)
         return self._motion_events_model
 
     @property
-    def sensors_model(self) -> SensorsModel:
+    def sensors_model(self) -> SensorsRepository:
         if self._sensors_model is None:
-            self._sensors_model = SensorsModel(self._db)
+            self._sensors_model = SensorsRepository(self._db)
         return self._sensors_model
 
     @property
-    def users_model(self) -> UsersModel:
+    def users_model(self) -> UsersRepository:
         if self._users_model is None:
-            self._users_model = UsersModel(self._db)
+            self._users_model = UsersRepository(self._db)
         return self._users_model
 
     # --------------------
@@ -135,6 +129,44 @@ class AppContainer:
                 self.motion_events_model
             )
         return self._home_service
+    
+    @property
+    def users_service(self) -> UsersService:
+        if self._users_service is None:
+            self._users_service = UsersService(
+                self._db,
+                self.users_model,
+            )
+        return self._users_service
+    
+    @property
+    def sensors_service(self) -> SensorsService:
+        if self._sensors_service is None:
+            self._sensors_service = SensorsService(
+                self._db,
+                self.sensors_model,
+                self.class_rooms_model,
+            )
+        return self._sensors_service
+    
+    @property
+    def categories_service(self) -> CategoriesService:
+        if self._categories_service is None:
+            self._categories_service = CategoriesService(
+                self._db,
+                self.categories_model,
+            )
+        return self._categories_service
+    
+    @property
+    def motion_events_service(self) -> MotionEventsService:
+        if self._motion_events_service is None:
+            self._motion_events_service = MotionEventsService(
+                self._db,
+                self.motion_events_model,
+                self.sensors_model,
+            )
+        return self._motion_events_service
 
     @property
     def permission_service(self) -> "PermissionService":

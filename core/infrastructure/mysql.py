@@ -206,6 +206,7 @@ class MySQL(DB):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
+        
         self._validate_tbname(tbname)
         filters = filters or {}
 
@@ -322,6 +323,7 @@ class MySQL(DB):
         Execute raw SQL query (SELECT/INSERT/UPDATE/DELETE)
         Returns fetchall() result for SELECT, or rowcount for mutations
         """
+        print(sql, params)  # Debug: log the query and params
         if not sql or not isinstance(sql, str):
             raise ValueError("query() requires valid SQL string")
         

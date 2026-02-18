@@ -41,7 +41,7 @@ class SensorsRepository(ModelBase):
 
     # ---------- Read ----------
     def get_by_id(self, sensor_id: int) -> Optional[Sensor]:
-        rows = self.db.select(self.TABLE, {"id": sensor_id})
+        rows = self.db.query("SELECT * FROM sensors WHERE id = %s", (sensor_id,))
         if rows:
             row = rows[0]
             return Sensor(row['id'], row['room_id'], row['private_key'], row['public_key'])
@@ -50,18 +50,18 @@ class SensorsRepository(ModelBase):
     def get_by_privateKey(self, private_key: str) -> Optional[Sensor]:
         if not private_key:
             raise ValueError("get_by_privateKey() requires private_key")
-        rows = self.db.select(self.TABLE, {"private_key": private_key})
+        rows = self.db.query("SELECT * FROM sensors WHERE private_key = %s", (private_key,))
         if rows:
             row = rows[0]
             return Sensor(row['id'], row['room_id'], row['private_key'], row['public_key'])
         return None
 
     def list_by_room_id(self, room_id: int) -> List[Sensor]:
-        rows = self.db.select(self.TABLE, {"room_id": room_id}) or []
+        rows = self.db.query("SELECT * FROM sensors WHERE room_id = %s", (room_id,)) or []
         return [Sensor(row['id'], row['room_id'], row['private_key'], row['public_key']) for row in rows]
 
     def list_all(self) -> List[Sensor]:
-        rows = self.db.select(self.TABLE, {}) or []
+        rows = self.db.query("SELECT * FROM sensors", ()) or []
         return [Sensor(row['id'], row['room_id'], row['private_key'], row['public_key']) for row in rows]
 
     # ---------- Update ----------
@@ -73,12 +73,12 @@ class SensorsRepository(ModelBase):
         if "public_key" in fields and not fields["public_key"]:
             raise ValueError("update_by_id() cannot set empty 'public_key'")
 
-        return self.db.update(self.TABLE, filter=fields, where={"id": sensor_id})
+        return self.db.update(self.TABLE, data=fields, where={"id": sensor_id})
 
     def update_room_by_token(self, token: str, room_id: int) -> int:
         if not token:
             raise ValueError("update_room_by_token() requires token")
-        return self.db.update(self.TABLE, filter={"room_id": room_id}, where={"token": token})
+        return self.db.update(self.TABLE, data={"room_id": room_id}, where={"token": token})
 
     # ---------- Delete ----------
     def delete_by_id(self, sensor_id: int) -> int:

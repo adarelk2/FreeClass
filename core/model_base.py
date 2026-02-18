@@ -7,7 +7,13 @@ class ModelBase:
     def __init__(self, _tbname) -> None:
         self.TABLE = _tbname
 
-    def filter(
+    def get_all(self) -> List[Dict[str, Any]]:
+        """
+        Get all rows from the table using query().
+        """
+        return self.db.query(f"SELECT * FROM {self.TABLE}", ())
+
+    def get_with_filter(
         self,
         where: Optional[Dict[str, Any]] = None,
         *,
@@ -16,16 +22,48 @@ class ModelBase:
         offset: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
-        ADT-style filter wrapper.
-
-        - where: equality AND only, e.g. {"id": 1}
-        - order_by: supports "id", "-id", "event_time DESC", "event_time DESC, id DESC"
-        - limit/offset: pagination (offset requires limit)
+        Get rows with filter using query().
+        - where: dict of column=value conditions ANDed together
+        - order_by: "column" (ASC) or "-column" (DESC)
+        - limit/offset: pagination
         """
-        return self.db.select(
-            self.TABLE,
-            where or {},
-            order_by=order_by,
-            limit=limit,
-            offset=offset,
-        )
+        if not where:
+            # No filters, use get_all()
+            query = f"SELECT * FROM {self.TABLE}"
+            params = []
+        else:
+            # Build WHERE clause
+            where_parts = []
+            params = []
+            for col, val in where.items():
+                where_parts.append(f"{col} = %s")
+                params.append(val)
+            where_clause = " AND ".join(where_parts)
+            query = f"SELECT * FROM {self.TABLE} WHERE {where_clause}"
+
+        # Add ORDER BY
+        if order_by:
+            ob = order_by.strip()
+            if ob.startswith("-"):
+                col = ob[1:].strip()
+                query += f" ORDER BY {col} DESC"
+            else:
+                parts = ob.split()
+                if len(parts) >= 2 and parts[1].upper() in ("ASC", "DESC"):
+                    col = parts[0]
+                    direction = parts[1].upper()
+                else:
+                    col = ob
+                    direction = "ASC"
+                query += f" ORDER BY {col} {direction}"
+
+        # Add LIMIT/OFFSET
+        if limit is not None:
+            query += " LIMIT %s"
+            params.append(limit)
+        if offset is not None:
+            query += " OFFSET %s"
+            params.append(offset)
+
+        return self.db.query(query, tuple(params))
+

@@ -37,20 +37,18 @@ class ClassroomsRepository(ModelBase):
         if not isinstance(classroom_id, int):
             raise TypeError(f"classroom_id must be int, got {type(classroom_id).__name__}")
         
-        rows = self.db.select(self.TABLE, {"id": classroom_id})
+        rows = self.db.query("SELECT * FROM classrooms WHERE id = %s", (classroom_id,))
         return Room(rows[0]['id'], rows[0]['id_building'], rows[0]['floor'], rows[0]['class_number']) if rows else None
 
 
     def list_by_building(self, building_id: int) -> List[Room]:
-        rows = self.db.select(self.TABLE, {"id_building": building_id})
+        rows = self.db.query("SELECT * FROM classrooms WHERE id_building = %s", (building_id,))
         return [Room(row['id'], row['id_building'], row['floor'], row['class_number']) for row in rows]
 
     def list_by_floor(self, building_id: int, floor: int) -> List[Room]:
-        rows = self.db.select(self.TABLE,
-            {
-                "id_building": building_id,
-                "floor": floor,
-            },
+        rows = self.db.query(
+            "SELECT * FROM classrooms WHERE id_building = %s AND floor = %s",
+            (building_id, floor),
         )
         return [Room(row['id'], row['id_building'], row['floor'], row['class_number']) for row in rows]
 
@@ -60,7 +58,7 @@ class ClassroomsRepository(ModelBase):
 
         return self.db.update(
             self.TABLE,
-            filter=fields,
+            data=fields,
             where={"id": classroom_id},
         )
 

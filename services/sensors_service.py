@@ -61,7 +61,7 @@ class SensorsService:
     
     def list_all(self) -> list:
         """Get all sensors"""
-        return self.sensors_model.filter()
+        return self.sensors_model.list_all()
     
     def list_by_room(self, room_id: int) -> list:
         """Get all sensors for a specific room"""
