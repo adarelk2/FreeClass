@@ -54,7 +54,7 @@ class MotionEventsService:
         """Get all motion events for a specific room"""
         if not room_id:
             raise ValueError("room_id is required")
-        return self.motion_events_model.filter({"classroom_id": room_id})
+        return self.motion_events_model.get_with_filter({"classroom_id": room_id})
     
     def get_by_id(self, event_id: int) -> Optional[Dict[str, Any]]:
         """Get motion event by ID"""

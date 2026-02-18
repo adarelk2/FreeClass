@@ -12,13 +12,19 @@ class AdminloginController(ControllerBase):
 
         return self.responseHTML(context, "admin-login")
 
+
     def checkLogin(self, params):
         username = params["username"]
         password = params["password"]
-
         user = self.users_service.authenticate(username, password)
         if user:
-            encoded = jwt.encode({"exp":int(time.time())+3600 , "username": user['username'], "role":user['role']}, SECRET_JWT_KEY, algorithm="HS256")
+            # Include user id in JWT payload for User object reconstruction
+            encoded = jwt.encode({
+                "exp": int(time.time()) + 3600,
+                "username": user['username'],
+                "role": user['role'],
+                "id": user.get('id')
+            }, SECRET_JWT_KEY, algorithm="HS256")
             context = {}
             context['token'] = encoded
             return self.responseJSON(context, True)

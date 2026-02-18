@@ -24,7 +24,7 @@ class CategoriesService:
     
     def list_all(self) -> list:
         """Get all categories"""
-        return self.categories_model.filter()
+        return self.categories_model.get_all()
     
     def get_by_id(self, category_id: int) -> Optional[Dict[str, Any]]:
         """Get category by ID"""

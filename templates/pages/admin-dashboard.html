@@ -363,11 +363,56 @@
 
   <script>
     // ============================================================
-    // CONFIG
-    // אם הדף והשרת לא באותו דומיין/פורט, החלף לשורה הזו:
-    // const API_URL = 'http://localhost:4000/dashboardadmin';
+    // CONFIG + URL PARAM HANDLING
     // ============================================================
     const API_URL = '/dashboardadmin';
+
+    // Helper: Get URL params as object
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const obj = {};
+      for (let [key, value] of params) {
+        obj[key] = value;
+      }
+      return obj;
+    }
+
+    // Helper: Build URL with preserved params and token
+    function buildUrlWithToken(token) {
+      const urlParams = getUrlParams();
+      urlParams.token = token;
+      
+      const queryString = new URLSearchParams(urlParams).toString();
+      const basePath = window.location.pathname;
+      
+      return `${basePath}${queryString ? '?' + queryString : ''}`;
+    }
+
+    // Initialize: Check token in URL and localStorage
+    function initializeAuth() {
+      const urlParams = getUrlParams();
+      const tokenFromUrl = urlParams.token;
+      const tokenFromStorage = localStorage.getItem('token_auth');
+
+      // Token in URL → store in localStorage and continue
+      if (tokenFromUrl) {
+        localStorage.setItem('token_auth', tokenFromUrl);
+        return;
+      }
+
+      // No token in URL but have in localStorage → redirect to add it to URL
+      if (tokenFromStorage) {
+        const newUrl = buildUrlWithToken(tokenFromStorage);
+        window.location.href = newUrl;
+        return;
+      }
+
+      // No token anywhere → redirect to login
+      window.location.href = '/admin-login.html';
+    }
+
+    // Run auth check immediately
+    initializeAuth();
 
     // -------------------- Initial Data --------------------
     // אם אתה ב-Flask/Jinja2 - זה יעבוד.
@@ -389,7 +434,7 @@
 
     function getBuildingNameById(id_building) {
       const b = buildings.find(x => Number(x.id) === Number(id_building));
-      return b ? (b.name ?? '') : `בניין #${id_building}`;
+      return b ? (b.building_name ?? '') : `בניין #${id_building}`;
     }
 
     function getRoomById(roomId) {
@@ -405,11 +450,25 @@
 
     // -------------------- API helper --------------------
     async function apiCall(method, params) {
+      const token = localStorage.getItem('token_auth');
+      
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ method, params })
       });
+
+      // Handle 403 - redirect to login
+      if (response.status === 403) {
+        localStorage.removeItem('token_auth');
+        window.location.href = '/admin-login.html';
+        return;
+      }
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
@@ -434,11 +493,14 @@
     // -------------------- Buildings Table --------------------
     function renderBuildingsTable() {
       const tbody = document.getElementById('buildingsTbody');
-
-      tbody.innerHTML = buildings.map(b => `
+      console.log(buildings);
+      
+      tbody.innerHTML = buildings.map(b => {
+        const roomCount = Array.isArray(b.rooms) ? b.rooms.length : 0;
+        return `
         <tr>
-          <td class="py-3 font-medium text-slate-800">${escapeHtml(b.name ?? '')}</td>
-          <td class="py-3 text-slate-500">${b.totalRooms ?? '-'}</td>
+          <td class="py-3 font-medium text-slate-800">${escapeHtml(b.building_name ?? '')}</td>
+          <td class="py-3 text-slate-500">${roomCount}</td>
           <td class="py-3 text-slate-500">${b.floors ?? '-'}</td>
           <td class="py-3">
             <div class="inline-flex items-center gap-2">
@@ -453,7 +515,8 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
       lucide.createIcons();
     }
@@ -505,7 +568,8 @@
         if (af !== 0) return af;
         return Number(a.class_number) - Number(b.class_number);
       });
-
+      console.log(sorted);
+      
       tbody.innerHTML = sorted.map(r => `
         <tr>
           <td class="py-3 font-medium text-slate-800">${escapeHtml(getBuildingNameById(r.id_building))}</td>
@@ -670,7 +734,7 @@
         const result = await apiCall('createNewBuilding', { building_name: name, color, floors });
         if (!result.flag) return showBuildingFormError('השרת סירב ליצור את הבניין');
 
-        buildings.push({ id: result.id, name, floors, color, totalRooms: 0 });
+        buildings.push({ id: result.id, building_name: name, floors, color, rooms: [] });
         renderBuildingsTable();
         renderRoomBuildingsSelect();
         closeBuildingModal();
@@ -701,7 +765,7 @@
       roomNoBuildingsHint.classList.toggle('hidden', hasBuildings);
 
       roomBuildingSelect.innerHTML = (hasBuildings ? buildings : []).map(b => `
-        <option value="${b.id}">${escapeHtml(b.name ?? '')}</option>
+        <option value="${b.id}">${escapeHtml(b.building_name ?? '')}</option>
       `).join('');
 
       roomBuildingSelect.disabled = !hasBuildings;

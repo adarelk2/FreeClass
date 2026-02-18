@@ -61,8 +61,23 @@ class SensorsService:
     
     def list_all(self) -> list:
         """Get all sensors"""
-        return self.sensors_model.filter()
+        return self.sensors_model.list_all()
     
     def list_by_room(self, room_id: int) -> list:
         """Get all sensors for a specific room"""
         return self.sensors_model.list_by_room_id(room_id)
+
+    def delete_sensor(self, sensor_id: int) -> bool:
+        """
+        Delete a sensor by its ID.
+
+        Returns True if a row was deleted, False otherwise.
+        """
+        if not sensor_id:
+            return False
+
+        try:
+            deleted = self.sensors_model.delete_by_id(int(sensor_id))
+            return bool(deleted and int(deleted) > 0)
+        except Exception:
+            return False

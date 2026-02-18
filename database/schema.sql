@@ -31,6 +31,14 @@ CREATE TABLE `buildings` (
 ) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+-- Dumping data for table `classroom_categories`
+LOCK TABLES `classroom_categories` WRITE;
+INSERT INTO `classroom_categories` (`id`, `name`, `description`, `color`, `created_at`, `updated_at`) VALUES
+(5, 'חדר שקט', 'חדר ללמידה שקטה או עבודה אישית', '#6c757d', '2025-12-26 01:10:11', NULL),
+(6, 'כיתה', 'כיתת לימוד רגילה', '#0d6efd', '2025-12-26 01:10:11', NULL),
+(7, 'מעבדה', 'מעבדה ללימוד מעשי ותרגול', '#198754', '2025-12-26 01:10:11', NULL);
+UNLOCK TABLES;
+
 --
 -- Table structure for table `classroom_categories`
 --
@@ -138,5 +146,27 @@ CREATE TABLE `users` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+--
+-- Table structure for table `permissions`
+--
 
+DROP TABLE IF EXISTS `permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `permissions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `controller` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `roles` json NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_permissions_controller` (`controller`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `permissions`
+--
+
+LOCK TABLES `permissions` WRITE;
+INSERT INTO `permissions` (`controller`, `roles`) VALUES ('dashboardadmin', '["admin"]');
+UNLOCK TABLES;
 -- Dump completed on 2026-01-08 19:50:54

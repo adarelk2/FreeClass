@@ -37,7 +37,7 @@ class ClassRoomCategoriesRepository(ModelBase):
 
 
     def get_by_id(self, classroom_id: int) -> Optional[ClassRoomCategory]:
-        rows = self.db.select(self.TABLE, {"id": classroom_id})
+        rows = self.db.query("SELECT * FROM classroom_categories WHERE id = %s", (classroom_id,))
         if rows:
             row = rows[0]
             return ClassRoomCategory(

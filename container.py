@@ -13,6 +13,7 @@ from repositories.classroom_motion_events_repository import ClassroomMotionEvent
 from repositories.sensors_repository import SensorsRepository
 from repositories.users_repository import UsersRepository
 
+
 # services
 from services.rooms_service import RoomsService
 from services.building_service import BuildingService
@@ -21,7 +22,7 @@ from services.users_service import UsersService
 from services.sensors_service import SensorsService
 from services.categories_service import CategoriesService
 from services.motion_events_service import MotionEventsService
-
+from services.permission_service import PermissionService
 
 class AppContainer:
     """
@@ -43,13 +44,14 @@ class AppContainer:
         self._users_model: Optional[UsersRepository] = None
 
         # services cache
-        self._rooms_service: Optional[RoomsService] = None
-        self._building_service: Optional[BuildingService] = None
-        self._home_service: Optional[HomeService] = None
-        self._users_service: Optional[UsersService] = None
-        self._sensors_service: Optional[SensorsService] = None
-        self._categories_service: Optional[CategoriesService] = None
-        self._motion_events_service: Optional[MotionEventsService] = None
+        self._rooms_service = None
+        self._building_service = None
+        self._home_service = None
+        self._users_service = None
+        self._sensors_service = None
+        self._categories_service = None
+        self._motion_events_service = None
+        self._permission_service = None
 
     # --------------------
     # REPOSITORIES
@@ -165,4 +167,30 @@ class AppContainer:
                 self.sensors_model,
             )
         return self._motion_events_service
+
+    @property
+    def permission_service(self) -> "PermissionService":
+        if self._permission_service is None:
+            # Prefer DB-backed provider; fall back to local in case of missing table/errors
+            try:
+                from core.infrastructure.permission_manager import (
+                    PermissionDB,
+                    PermissionLocal,
+                )
+
+                provider = PermissionDB(self._db)
+                # quick probe to ensure provider works (may raise if table missing)
+                try:
+                    provider.get_permissions("home")
+                except Exception:
+                    provider = PermissionLocal()
+
+                self._permission_service = PermissionService(provider)
+            except Exception:
+                # ultimate fallback
+                from core.infrastructure.permission_manager import PermissionLocal
+
+                self._permission_service = PermissionService(PermissionLocal())
+
+        return self._permission_service
 

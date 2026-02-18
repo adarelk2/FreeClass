@@ -42,8 +42,8 @@ class RoomsService:
     # ---- ADT: public API (keep names) ----
 
     def getRoomsAvailable(self):
-        rooms = self.rooms_model.filter()  # [{id, id_building, floor, class_number, ...}, ...]
-        events = self.motion_events_model.filter()  # [{classroom_id, event_time, ...}, ...]
+        rooms = self.rooms_model.get_all()  # [{id, id_building, floor, class_number, ...}, ...]
+        events = self.motion_events_model.get_all()  # [{classroom_id, event_time, ...}, ...]
 
         recent_events = self.filterEventsBySec(events, self.activity_seconds)
         busy_ids = self._extract_busy_classroom_ids(recent_events)
@@ -85,21 +85,41 @@ class RoomsService:
         return ids
 
     def filterEventsBySec(self, _events, _sec):
+        """Filter events to only those within the activity window."""
+        if not _events:
+            return []
+        
         now = self.utcnow_fn()
-        sec = int(_sec)
-
+        sec = int(_sec) if _sec else 900
         filtered = []
-        for ev in _events or []:
+
+        for ev in _events:
+            if not ev:
+                continue
+                
             t = ev.get("event_time")
             if not t:
                 continue
+                
             try:
-                delta = (now - t).total_seconds()
-            except Exception:
+                # Handle both string and datetime objects
+                if isinstance(t, str):
+                    try:
+                        event_time = datetime.fromisoformat(t.replace('Z', '+00:00'))
+                    except:
+                        event_time = datetime.strptime(t[:19], '%Y-%m-%d %H:%M:%S')
+                else:
+                    event_time = t
+                
+                # Calculate delta
+                delta = (now - event_time).total_seconds()
+                
+                # Only include if recent (0 <= delta <= sec)
+                if 0 <= delta <= sec:
+                    filtered.append(ev)
+            except:
+                # Skip events with parsing errors
                 continue
-
-            if 0 <= delta <= sec:
-                filtered.append(ev)
 
         return filtered
 
@@ -151,7 +171,7 @@ class RoomsService:
 
     def list_all(self) -> list:
         """Get all rooms"""
-        return self.rooms_model.filter()
+        return self.rooms_model.get_all()
 
     def create_room(self, building_id: int, floor: int, class_number: int, category_id: int = None) -> Optional[int]:
         """

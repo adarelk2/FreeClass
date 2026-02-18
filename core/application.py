@@ -4,11 +4,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple, Union
 import json
+import jwt
 
 from flask import render_template, abort, Response, jsonify
 from werkzeug.wrappers import Request
 
 from core.controller_loader import ControllerLoader
+from core.config import SECRET_JWT_KEY
+from models.User import User
 from container import AppContainer
 
 @dataclass
@@ -23,6 +26,58 @@ class Application:
         self.controller_loader = controller_loader or ControllerLoader()
         self.logger = logger
 
+    def _extract_jwt_token(self, request: Request) -> Optional[str]:
+        """Extract JWT token from:
+        1. Authorization header (Bearer token)
+        2. URL params (?token=x or &token=x)
+        3. Request body params ({"token": "x"} or {"params": {"token": "x"}})
+        """
+        # Try Authorization header first
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            return auth_header[7:]  # Remove "Bearer " prefix
+        
+        # Try URL query params
+        token_from_query = request.args.get("token")
+        if token_from_query:
+            return token_from_query
+        
+        # Try request body (JSON params)
+        payload: Dict[str, Any] = request.get_json(silent=True) or {}
+        if isinstance(payload, dict):
+            # Direct param
+            if "token" in payload:
+                return payload.get("token")
+            # Nested in params object
+            if "params" in payload and isinstance(payload["params"], dict):
+                if "token" in payload["params"]:
+                    return payload["params"].get("token")
+        
+        # Try form data
+        token_from_form = request.form.get("token")
+        if token_from_form:
+            return token_from_form
+        
+        return None
+
+    def _validate_jwt_and_get_user(self, token: str) -> Optional[User]:
+        """Validate JWT token and return User object"""
+        try:
+            payload = jwt.decode(token, SECRET_JWT_KEY, algorithms=["HS256"])
+            # Extract user info from token payload
+            user = User(
+                username=payload.get("username", ""),
+                role=payload.get("role", "user"),
+                id=payload.get("id")
+            )
+            return user
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+        except Exception:
+            return None
+
     def handle(self, request: Request, controller_from_path: str) -> Response:
         errors: list[str] = []
         
@@ -31,7 +86,32 @@ class Application:
             return render_template("error.html", errors=errors), 400
 
         try:
-            controller = self.controller_loader.get_controller(call.controller_name, AppContainer())
+            container = AppContainer()
+            
+            # Extract and validate JWT token
+            token = self._extract_jwt_token(request)
+            user: Optional[User] = None
+            if token:
+                user = self._validate_jwt_and_get_user(token)
+            print(user)
+            # Check permissions: if controller requires auth and user is not valid, deny
+            permission_service = container.permission_service
+            allowed_roles = permission_service.get_permissions_by_controller(call.controller_name)
+            
+            if allowed_roles and not user:
+                # Controller requires permission but no valid user
+                from flask import redirect
+                return redirect('/adminlogin')
+
+            if user and allowed_roles and not permission_service.has_permission(user, call.controller_name):
+                # User authenticated but doesn't have required role
+                return render_template('error.html', errors=["You do not have permission to access this page."]), 404
+            
+            # Add user to params if authenticated
+            if user:
+                call.params["user"] = user
+
+            controller = self.controller_loader.get_controller(call.controller_name, container)
 
             method = getattr(controller, call.method_name, None)
             if not callable(method):
