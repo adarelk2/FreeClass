@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-import re
+
 
 class ValidationInterface(ABC):
     """ממשק מופשט עבור ולידטורים."""

@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List, Optional
 from core.permissions import Permissions
 from models.User import User
+from services.permission_service import PermissionService
 
 class PermissionLocal(Permissions):
     """In-memory permissions provider (useful for tests / small apps)."""

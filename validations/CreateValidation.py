@@ -1,6 +1,7 @@
-from core.validations.SensorValidation import SensorValidation
-from core.validations.RoomValidation import RoomValidation
-from core.validations.BuildingValidation import BuildingValidation
+from validations.SensorValidation import SensorValidation
+from validations.RoomValidation import RoomValidation
+from validations.BuildingValidation import BuildingValidation
+
 
 class CreateValidation:
     def __init__(self, str, params):
@@ -14,4 +15,3 @@ class CreateValidation:
             return RoomValidation(self.params)
         if self.str == "building":
             return BuildingValidation(self.params)
-        

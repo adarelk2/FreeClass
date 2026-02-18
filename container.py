@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 # db
-from core.create_database import db
+from core.infrastructure.database_factory import db
 
 # repositories
 from repositories.building_repository import BuildingRepository, BuildingRepositoryMysql, BuildingRepositoryMock
