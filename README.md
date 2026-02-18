@@ -1,130 +1,88 @@
-# FreeClass – Real-Time Campus Space Availability (Backend-Focused)
+# FreeClass – Real-Time Classroom Availability
 
-FreeClass is a backend-first system that turns IoT occupancy signals (ESP32 or simulator) into **real-time classroom availability** for a campus.
-The client side exists mainly to demonstrate UX/UI, and is located under `template/pages`.
+FreeClass is a Flask-based backend project that converts occupancy inputs (sensor/simulator) into classroom availability data, with demo HTML templates for UI rendering.
 
----
+## Environment modes
 
-## 🌍 Environment Modes & Database Selection
+Runtime database backend is controlled by `ENV_MODE`:
 
-FreeClass supports multiple runtime modes controlled via the environment variable `ENV_MODE`.
+| ENV_MODE | Backend |
+|----------|---------|
+| `develop` | JSON mock database (`database/mock_db.json`) |
+| `production` | MySQL |
 
+## Prerequisites
 
-| ENV_MODE value | Database backend |
-| -------------- | ---------------- |
-| develop        | MockJSONDB       |
-| production     | MySQL            |
+- Python 3.10+
+- pip
+- (Optional) MySQL server for `production` mode
 
-### Example
+## Setup
 
-```bash
-export ENV_MODE=develop
-python main.py
-
-export ENV_MODE=production
-python main.py
-```
-
----
-
-## What this repo showcases
-
-- **Real-time occupancy pipeline**: sensor event → API → MySQL → live availability views
-- **Backend architecture & data modeling** for:
-  - campus → buildings → rooms → sensors
-  - motion/occupancy event logs + current status
-- **Operational controls**: admin overrides (e.g., maintenance/closure) that take precedence over sensor data
-- **Performance-minded querying**: aggregation, filtering, and dynamic query building for dashboards
-- **Reliability considerations**: latency, sensor failure, stale updates, and safe fallbacks
-
----
-
-## System at a glance
-
-```
-IoT Sensors (ESP32 / Simulator)
-        ↓
-Python Backend (REST API)
-        ↓
-MySQL (events + current status + history)
-        ↓
-UI templates (for demo) → template/pages
-```
-
-The backend provides consistent availability results even when schedules don’t match physical reality (“ghost occupancy”).
-
----
-
-## Key capabilities
-
-### Student-facing (API + demo UI)
-
-- Campus-wide availability overview (total vacant rooms)
-- Building and floor breakdown
-- Room type filters (e.g., classrooms, labs, libraries)
-- Recent activity tracking (last viewed rooms + live status)
-- Weekly occupancy visualization (derived from historical data)
-
-### Admin-facing (API + demo UI)
-
-- Secure admin login
-- Override room status (Available / Occupied / Maintenance)
-- Manage rooms and sensor assignments
-- Monitor utilization and data correctness
-
----
-
-## Tech stack
-
-**Backend**
-
-- Python (REST API)
-- IoT integration layer (simulated or physical)
-- MySQL queries for aggregation + filtering
-
-**Frontend (demo-only)**
-
-- HTML5 + Tailwind CSS + Vanilla JS
-- Pages/templates live in: `template/pages`
-
-**Tooling**
-
-- Git/GitHub, VS Code, Postman
-
----
-
-## Project structure (high level)
-
-> Exact filenames may vary, but the repository is organized around a backend core + templates:
-
-- `core/` – application orchestration, routing/dispatch, configuration
-- `models/` – database access and domain models (rooms, sensors, events, users)
-- `services/` – business logic (availability calculations, filters, admin actions)
-- `controllers/` – request handling (student/admin endpoints)
-- `template/pages/` – demo UI pages (UX/UI only)
-
----
-
-## Running locally (typical)
-
-1. Create a MySQL database and import database/schema.sql
-2. Configure environment variables (DB host/user/password, app port, ENV_MODE).
-3. Install dependencies and run the server.
+1. Create and activate a virtual environment:
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-python main.py
 ```
 
----
+2. Install dependencies:
 
-## Why this matters
+```bash
+pip install -r requirements.txt
+```
 
-This project tackles real engineering challenges:
+3. Configure environment variables (via `.env` or shell export):
 
-- bridging **physical signals** with **software truth**
-- handling imperfect data and operational overrides
-- delivering consistent results with **low latency**
-- designing a backend that can scale from simulator to real hardware
+- `ENV_MODE` (`develop` / `production`)
+- `SERVER_PORT`
+- `SECRET_JWT_KEY`
+- `MYSQL_HOST`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `MYSQL_DATABASE`
+- `MYSQL_PORT` (optional, default `3306`)
+- `MYSQL_SSL_REQUIRED` (optional, default `true`)
+
+> Note: In `develop` mode, FreeClass uses `database/mock_db.json` and does not require MySQL.
+
+4. For MySQL mode, import the schema:
+
+```bash
+mysql -u <user> -p <database_name> < database/schema.sql
+```
+
+## Run the application
+
+```bash
+python3 main.py
+```
+
+The app exposes a controller-based route pattern:
+
+- `/` (defaults to `home` controller)
+- `/<controller>`
+
+## Run tests
+
+```bash
+python3 -m unittest tests.test_unit
+```
+
+## Project structure (high-level)
+
+- `main.py` – Flask entry point and request dispatch route.
+- `core/` – app orchestration, configuration, controller loading, infrastructure.
+- `controllers/` – request handlers per controller.
+- `services/` – business logic.
+- `repositories/` – DB/mock repository implementations and interfaces.
+- `models/` – domain models.
+- `database/` – SQL schema and mock JSON database.
+- `templates/` – HTML templates (`templates/pages/` for page templates).
+- `sensor.ino` – sensor-side sketch (ESP32/Arduino context).
+
+## API collection
+
+Postman collection is included at:
+
+- `FreeClass_API_POSTMAN.json`
