@@ -6,12 +6,20 @@ from typing import Optional
 from core.create_database import db
 
 # repositories
-from repositories.building_repository import BuildingRepository
-from repositories.class_room_categories_repository import ClassRoomCategoriesRepository
-from repositories.classrooms_repository import ClassroomsRepository
-from repositories.classroom_motion_events_repository import ClassroomMotionEventsRepository
-from repositories.sensors_repository import SensorsRepository
-from repositories.users_repository import UsersRepository
+from repositories.building_repository import BuildingRepository, BuildingRepositoryMysql, BuildingRepositoryMock
+from repositories.class_room_categories_repository import (
+    ClassRoomCategoriesRepository,
+    ClassRoomCategoriesRepositoryMysql,
+    ClassRoomCategoriesRepositoryMock,
+)
+from repositories.classrooms_repository import ClassroomsRepository, ClassroomsRepositoryMysql, ClassroomsRepositoryMock
+from repositories.classroom_motion_events_repository import (
+    ClassroomMotionEventsRepository,
+    ClassroomMotionEventsRepositoryMysql,
+    ClassroomMotionEventsRepositoryMock,
+)
+from repositories.sensors_repository import SensorsRepository, SensorsRepositoryMysql, SensorsRepositoryMock
+from repositories.users_repository import UsersRepository, UsersRepositoryMysql, UsersRepositoryMock
 
 
 # services
@@ -56,40 +64,50 @@ class AppContainer:
     # --------------------
     # REPOSITORIES
     # --------------------
+    def _is_mock_db(self) -> bool:
+        print(f"DB class: {self._db.__class__.__name__}")
+        return self._db.__class__.__name__.lower() == "mockjsondb"
+
     @property
     def building_model(self) -> BuildingRepository:
         if self._building_model is None:
-            self._building_model = BuildingRepository(self._db)
+            repo_cls = BuildingRepositoryMock if self._is_mock_db() else BuildingRepositoryMysql
+            self._building_model = repo_cls(self._db)
         return self._building_model
 
     @property
     def categories_model(self) -> ClassRoomCategoriesRepository:
         if self._categories_model is None:
-            self._categories_model = ClassRoomCategoriesRepository(self._db)
+            repo_cls = ClassRoomCategoriesRepositoryMock if self._is_mock_db() else ClassRoomCategoriesRepositoryMysql
+            self._categories_model = repo_cls(self._db)
         return self._categories_model
 
     @property
     def class_rooms_model(self) -> ClassroomsRepository:
         if self._class_rooms_model is None:
-            self._class_rooms_model = ClassroomsRepository(self._db)
+            repo_cls = ClassroomsRepositoryMock if self._is_mock_db() else ClassroomsRepositoryMysql
+            self._class_rooms_model = repo_cls(self._db)
         return self._class_rooms_model
 
     @property
     def motion_events_model(self) -> ClassroomMotionEventsRepository:
         if self._motion_events_model is None:
-            self._motion_events_model = ClassroomMotionEventsRepository(self._db)
+            repo_cls = ClassroomMotionEventsRepositoryMock if self._is_mock_db() else ClassroomMotionEventsRepositoryMysql
+            self._motion_events_model = repo_cls(self._db)
         return self._motion_events_model
 
     @property
     def sensors_model(self) -> SensorsRepository:
         if self._sensors_model is None:
-            self._sensors_model = SensorsRepository(self._db)
+            repo_cls = SensorsRepositoryMock if self._is_mock_db() else SensorsRepositoryMysql
+            self._sensors_model = repo_cls(self._db)
         return self._sensors_model
 
     @property
     def users_model(self) -> UsersRepository:
         if self._users_model is None:
-            self._users_model = UsersRepository(self._db)
+            repo_cls = UsersRepositoryMock if self._is_mock_db() else UsersRepositoryMysql
+            self._users_model = repo_cls(self._db)
         return self._users_model
 
     # --------------------
