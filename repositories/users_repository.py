@@ -1,49 +1,9 @@
-# repositories/users_repository.py
-from __future__ import annotations
-from typing import Any, Dict, List, Optional
-from core.infrastructure.mysql import MySQL
-from core.model_base import ModelBase
-from models.User import User
+from repositories.users_repository_interface import UsersRepository
+from repositories.users_repository_mysql import UsersRepositoryMysql
+from repositories.users_repository_mock import UsersRepositoryMock
 
-
-class UsersRepository(ModelBase):
-    """
-    users table repository.
-
-
-+----------+-------------------------------+------+-----+---------+----------------+
-| Field    | Type                          | Null | Key | Default | Extra          |
-+----------+-------------------------------+------+-----+---------+----------------+
-| id       | bigint unsigned               | NO   | PRI | NULL    | auto_increment |
-| username | varchar(191)                  | NO   | UNI | NULL    |                |
-| password | varchar(255)                  | NO   |     | NULL    |                |
-| role     | enum('admin','user','moderator') | NO |     | user    |                |
-+----------+-------------------------------+------+-----+---------+----------------+
-
-
-    """
-
-    def __init__(self, db: MySQL) -> None:
-        super().__init__("users")
-        self.db = db
-
-    def create(self, data: Dict[str, Any]) -> int:
-        if not data:
-            raise ValueError("create() requires data")
-
-        new_id = self.db.insert(self.TABLE, data)
-        if new_id is None:
-            raise RuntimeError("Insert succeeded but no lastrowid was returned")
-        return int(new_id)
-
-    def get_by_id(self, user_id: int) -> Optional[User]:
-        rows = self.db.query("SELECT * FROM users WHERE id = %s", (user_id,))
-        if rows:
-            row = rows[0]
-            return User(row['username'], row['role'], row['id'])
-        return None
-
-    def update_by_id(self, building_id: int, fields: Dict[str, Any]) -> int:
-        if not fields:
-            raise ValueError("update_by_id() requires at least one field")
-        return self.db.update(self.TABLE, data=fields, where={"id": building_id})
+__all__ = [
+    "UsersRepository",
+    "UsersRepositoryMysql",
+    "UsersRepositoryMock",
+]

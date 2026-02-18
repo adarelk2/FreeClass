@@ -1,6 +1,6 @@
 from core.controller_base import ControllerBase
 from core.config import (SECRET_JWT_KEY)
-from core.validations.CreateValidation import CreateValidation
+from validations.CreateValidation import CreateValidation
 import jwt
 import time
 

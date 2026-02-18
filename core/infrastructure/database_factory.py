@@ -7,12 +7,12 @@ from core.config import (
     MYSQL_DATABASE,
     MYSQL_PORT,
     MYSQL_SSL_REQUIRED,
-
-    ENV_MODE
+    ENV_MODE,
 )
 
-def createDatabase(_mode="production"):
-    if _mode == "production":
+
+def create_database(mode="production"):
+    if mode == "production":
         return MySQL(
             host=MYSQL_HOST,
             user=MYSQL_USER,
@@ -22,10 +22,10 @@ def createDatabase(_mode="production"):
             ssl_required=MYSQL_SSL_REQUIRED,
         )
 
-    elif _mode == "develop":
+    if mode == "develop":
         return MockJSONDB("database/mock_db.json")
 
-    else:
-        raise ValueError(f"Unknown ENV_MODE: {_mode}")
+    raise ValueError(f"Unknown ENV_MODE: {mode}")
 
-db = createDatabase(ENV_MODE.lower())
+
+db = create_database(ENV_MODE.lower())
